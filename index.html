@@ -1,0 +1,581 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><title>Mis Clases</title><style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#172033;--muted:#7b8495;--line:#e7eaf0;--blue:#5f6368;--green:#6f7378;--red:#777b80;--yellow:#777b80;--shadow:0 8px 28px rgba(20,31,55,.07)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",sans-serif}.app{max-width:1100px;margin:auto;min-height:100vh;padding-bottom:90px}header{padding:24px 20px 12px;display:flex;justify-content:space-between;align-items:center}h1{font-size:26px;margin:0}h2{font-size:18px;margin:0}h3{margin:0}.sub,.muted{color:var(--muted);font-size:13px}.sub{margin-top:4px}main{padding:8px 20px}.screen{display:none}.screen.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat,.card{background:var(--card);border-radius:18px;box-shadow:var(--shadow)}.stat{padding:16px}.stat span{font-size:12px;color:var(--muted)}.stat b{display:block;font-size:21px;margin-top:7px}.card{padding:16px;margin-bottom:10px}.row{display:flex;align-items:center;gap:12px}.between{justify-content:space-between}.avatar{width:44px;height:44px;border-radius:14px;background:#eef0f2;color:var(--blue);display:grid;place-items:center;font-weight:800}.name{font-weight:750}.badge{padding:6px 9px;border-radius:999px;background:#f0f1f2;color:var(--green);font-size:11px;font-weight:700}.badge.red{background:#f0f1f2;color:var(--red)}.badge.blue{background:#f0f1f2;color:var(--blue)}.section{margin-top:24px}.sectionhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}.btn.selected{background:white;color:var(--text);border:1px solid var(--line)}.btn{border:0;border-radius:12px;padding:11px 14px;background:var(--blue);color:white;font-weight:700;cursor:pointer}.btn.secondary{background:#eef1f5;color:var(--text)}.btn.small{padding:8px 10px;font-size:12px}.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.toolbar{display:flex;gap:9px;margin-bottom:14px}.search,input,select,textarea{font:inherit}.search,input,select,textarea{border:1px solid var(--line);border-radius:12px;background:white;padding:12px 13px;outline:none}.search{flex:1}.list{display:grid;gap:10px}.empty{text-align:center;color:var(--muted);padding:28px}.bottom{position:fixed !important;bottom:0;left:0;right:0;width:100vw;background:rgba(255,255,255,.95);backdrop-filter:blur(14px);border-top:1px solid var(--line);z-index:10}.nav{width:100%;max-width:none;margin:0;display:flex;justify-content:space-around}.nav button{background:none;border:0;padding:10px 14px 9px;color:var(--muted);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;flex:1}.nav button.active{color:var(--blue);font-weight:800}.nav-icon{width:24px;height:24px;display:block;flex:0 0 24px;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none}.form{display:grid;gap:11px}.form label{font-size:12px;color:var(--muted);font-weight:700}.form input,.form select,.form textarea{width:100%}.form textarea{min-height:80px}.modal{position:fixed;inset:0;background:rgba(10,16,28,.45);display:none;align-items:flex-end;z-index:20}.modal.show{display:flex}.sheet{background:#fff;width:100%;max-width:620px;margin:auto;border-radius:24px 24px 0 0;padding:22px;max-height:90vh;overflow:auto}.monthbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.monthbar button{border:0;background:#fff;border-radius:12px;padding:8px 12px;box-shadow:var(--shadow);cursor:pointer}.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.dow{text-align:center;font-size:11px;color:var(--muted);padding:6px}.daycell{min-height:82px;background:#fff;border-radius:10px;padding:6px;box-shadow:var(--shadow);font-size:11px}.daycell.mutedday{opacity:.4}.daynum{font-weight:800}.event{display:block;margin-top:4px;border-radius:6px;padding:3px 4px;background:#edf3ff;color:var(--blue);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.event.rain{background:#fff4df;color:#9a6500}.hours{font-size:13px;margin-top:12px;padding:12px;background:#fff4df;border-radius:13px}.hitgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}.hit{display:flex;justify-content:space-between;align-items:center;background:#f5f7fa;border-radius:12px;padding:9px}.hit button{border:0;background:#eaf2ff;color:var(--blue);border-radius:9px;padding:5px 9px;font-weight:800}.planblock{border-left:4px solid var(--blue);padding:10px 12px;background:#f8f9fb;border-radius:10px;margin-top:8px}.planblock b{font-size:11px;color:var(--muted);display:block;margin-bottom:3px}
+@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}main{padding:8px 16px}header{padding:20px 16px 10px}.stat{padding:13px}.stat b{font-size:19px}.daycell{min-height:70px}.event{font-size:10px}}
+@media(min-width:701px){.bottom{position:fixed !important;bottom:0;left:0;right:0;width:100vw;margin:0;border:0;background:rgba(255,255,255,.95);border-top:1px solid var(--line)}.nav{width:100%;max-width:none;background:transparent;border-radius:0;box-shadow:none}.nav button{padding:12px 28px}.modal{align-items:center}.sheet{border-radius:22px}}
+
+/* Tema minimalista + modo oscuro */
+body.dark{--bg:#111214;--card:#1a1b1f;--text:#f2f3f5;--muted:#9b9da5;--line:#2b2d32;--blue:#d7d9de;--green:#c9ccd2;--red:#d0d2d6;--yellow:#d0d2d6;--shadow:0 8px 28px rgba(0,0,0,.22)}
+body.dark .bottom{background:rgba(25,26,29,.96)}body.dark .btn{background:#f0f1f3;color:#17181b}body.dark .btn.secondary,body.dark .search,body.dark input,body.dark select,body.dark textarea,body.dark .monthbar button{background:#23252a;color:var(--text);border-color:var(--line)}body.dark .avatar{background:#292b30;color:#e7e8eb}body.dark .badge,body.dark .badge.blue,body.dark .badge.red{background:#292b30;color:#d9dbe0}body.dark .daycell,body.dark .stat,body.dark .card{background:var(--card)}
+body.font-system{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",sans-serif}
+body.font-inter{font-family:Inter,ui-sans-serif,system-ui,sans-serif}
+body.font-segoe{font-family:"Segoe UI",system-ui,sans-serif}
+body.font-avenir{font-family:"Avenir Next",Avenir,system-ui,sans-serif}
+body.font-georgia{font-family:Georgia,"Times New Roman",serif}
+
+#authGate{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}#authCard{width:min(390px,100%);background:var(--card);border-radius:22px;padding:26px;box-shadow:var(--shadow)}#authCard h2{margin-bottom:6px}#authCard .sub{margin-bottom:20px}#authForm{display:grid;gap:11px}#authForm input{width:100%}#authError{display:none;color:#b42318;background:#fff1f0;border-radius:10px;padding:10px;font-size:12px;line-height:1.4}#authLoading{display:none;text-align:center;color:var(--muted);font-size:13px}
+/* --- Pulido visual: dark mode y responsive --- */
+body.dark{background:#0f1012!important;color:#f4f4f5!important}
+body.dark .app,body.dark main{background:transparent!important}
+body.dark .card,body.dark .stat{background:#181a1e!important;color:#f4f4f5!important;border:1px solid #24272d}
+body.dark .sheet{background:#181a1e!important;color:#f4f4f5!important}
+body.dark .search,body.dark input,body.dark select,body.dark textarea{background:#22252a!important;color:#f4f4f5!important;border-color:#34373e!important;color-scheme:dark}
+body.dark input::placeholder,body.dark textarea::placeholder{color:#777b84!important}
+body.dark .btn{background:#e9eaed!important;color:#17181b!important}
+body.dark .btn.secondary{background:#292c32!important;color:#eceef1!important}
+body.dark .bottom{background:rgba(15,16,18,.94)!important;border-top-color:#292c32!important}
+body.dark .nav button{color:#858a94!important}
+body.dark .nav button.active{color:#f1f2f4!important}
+body.dark .monthbar button{background:#202228!important;color:#f4f4f5!important;border:1px solid #30333a}
+body.dark .daycell{background:#181a1e!important;color:#f4f4f5!important;border:1px solid #25282e}
+body.dark .event{background:#272b31!important;color:#e9ebee!important}
+body.dark .event.rain{background:#302a20!important;color:#e7c98c!important}
+body.dark .hours{background:#24272d!important;color:#eceef1!important}
+body.dark .hit{background:#22252a!important;color:#f4f4f5!important}
+body.dark .hit button{background:#30343b!important;color:#f1f2f4!important}
+body.dark .student-extra,body.dark .student-recovery{background:#202328!important;border-color:#30333a!important}
+body.dark .planblock{background:#202328!important}
+body.dark .modal{background:rgba(0,0,0,.66)!important}
+body.dark [style*="background:#f7f8fa"],body.dark [style*="background: #f7f8fa"]{background:#202328!important}
+body.dark [style*="background:#fff"],body.dark [style*="background: #fff"]{background:#181a1e!important}
+body.dark [style*="color:#20a36a"]{color:#78d9a6!important}
+body.dark [style*="color:#e65b67"]{color:#ff929d!important}
+.student-card{overflow:hidden}
+.student-summary{cursor:pointer;user-select:none}
+.student-summary .chevron{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#f1f3f6;color:var(--muted);font-size:15px;transition:transform .18s,background .18s}
+.student-card.open .chevron{transform:rotate(180deg)}
+.student-card.open .student-summary .chevron{background:#e9edf2;color:var(--text)}
+.student-extra{display:none;margin-top:14px;padding-top:2px}
+.student-card.open .student-extra{display:block}
+.student-delete{color:#a33b45!important}
+@media(max-width:700px){
+  main{padding:8px 12px}
+  .calendar{gap:3px}
+  .dow{font-size:9px;padding:4px 2px}
+  .daycell{min-height:68px;padding:4px;border-radius:8px;font-size:10px;overflow:hidden}
+  .daynum{font-size:10px}
+  .event{font-size:9px;padding:2px 3px;margin-top:3px;max-width:100%;}
+  .calendar{grid-template-columns:repeat(7,minmax(40px,1fr))}
+  .sectionhead{gap:8px}
+  .sectionhead>div{display:flex;gap:5px}
+  .sectionhead .btn{padding:7px 8px;font-size:11px}
+}
+</style></head><body><div id="authGate"><div id="authCard"><h2>Mis Clases</h2><div class="sub">Iniciá sesión para acceder a tus clases.</div><form id="authForm"><input id="authEmail" type="email" placeholder="Email" autocomplete="email" required><input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password" required><div id="authError"></div><button class="btn" type="submit">Iniciar sesión</button><div id="authLoading">Comprobando sesión…</div></form></div></div><div class="app"><header><div><h1>Mis Clases</h1></div><button class="btn secondary" onclick="openModal('settings')">⚙️</button></header><main>
+<section id="home" class="screen active"><div class="grid" id="stats"></div><div class="section"><div class="sectionhead"><h2>Pagos pendientes</h2></div><div id="pending"></div></div></section>
+<section id="students" class="screen"><div class="sectionhead"><h2>Alumnos</h2><div><button class="btn small secondary" onclick="openModal('activity')">+ Escuelita</button> <button class="btn small" onclick="openModal('student')">+ Alumno</button></div></div><div class="toolbar"><input class="search" id="studentSearch" placeholder="Buscar alumno..." oninput="renderStudents()"></div><div id="studentList" class="list"></div><div id="activityManager"></div></section>
+<section id="agenda" class="screen"><div class="sectionhead"><h2>Calendario</h2><div><button class="btn small" onclick="openModal('class')">+ Clase</button> <button class="btn small secondary" onclick="openModal('rain')">☔ Lluvia</button></div></div><div class="monthbar"><button onclick="changeMonth(-1)">‹</button><b id="monthTitle"></b><button onclick="changeMonth(1)">›</button></div><div class="calendar" id="calendar"></div><div id="rainHours"></div></section>
+<section id="money" class="screen"><div class="sectionhead"><h2>Finanzas</h2><button class="btn small" onclick="openModal('payment')">+ Pago</button></div><div class="grid" id="moneyStats"></div><div class="section"><div class="sectionhead"><h2>Tarifas</h2><button class="btn small secondary" onclick="openModal('rates')">Editar</button></div><div id="ratesBox"></div></div><div class="section"><h2 style="margin-bottom:11px">Movimientos</h2><div id="paymentsList"></div></div></section>
+<section id="plans" class="screen"><div class="sectionhead"><h2>Planificación JAJ</h2><button class="btn small" onclick="openModal('plan')">+ Plan</button></div><div id="plansList"></div></section>
+</main><div class="bottom"><nav class="nav"><button class="active" onclick="go('home',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-7h5v7"></path></svg>Inicio</button><button onclick="go('students',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Alumnos</button><button onclick="go('agenda',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16"></rect><path d="M7 3v4M17 3v4M4 10h16"></path></svg>Agenda</button><button onclick="go('money',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16a1 1 0 0 1 1 1v12H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"></path><path d="M3 9h18"></path><path d="M16 14h3"></path></svg>Finanzas</button><button onclick="go('plans',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M15 3v4h3M9 11h6M9 15h6M9 19h4"></path></svg>Planes</button></nav></div></div><div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const SUPABASE_URL='https://kewejemijdccpnidztar.supabase.co';
+const SUPABASE_KEY='sb_publishable_jOWjSAEpPSW-Wc8fQilt_Q_lEKwyK7S';
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const GOOGLE_SCOPE='https://www.googleapis.com/auth/calendar.app.created';
+const GOOGLE_REDIRECT_URI='https://bidegaraylucas.github.io/clases/';
+const GOOGLE_TOKEN_FUNCTION=SUPABASE_URL+'/functions/v1/google-calendar-token';
+let googleToken=null; let googleCalendarId=null;
+const KEY='tennisCoachV04';const monthKey=()=>new Date().toISOString().slice(0,7);const seed={students:[],classes:[],rain:[],payments:[],rates:{class:12000,individual:90000,group:60000},plans:[],activities:[]};
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||seed;if(!Array.isArray(data.activities))data.activities=[];
+data.students.forEach(x=>{if(x.rainHours==null)x.rainHours=0;if(x.recoveredHours==null)x.recoveredHours=0});
+if(Array.isArray(data.rain)){data.rain.forEach(r=>{if(r.student){let st=data.students.find(x=>x.name===r.student);if(st&&!r.migrated){st.rainHours+=Number(r.hours||0);r.migrated=true}}});}
+data.classes.forEach(x=>{if(x.duration==null)x.duration=1;if(x.type==null)x.type='Normal';if(x.rain==null)x.rain=false});
+function pendingHours(x){return Math.max(0,Number(x.rainHours||0)-Number(x.recoveredHours||0));}
+function fixedOccurrences(y,m){let out=[];let last=new Date(y,m+1,0).getDate();data.students.forEach(st=>{let f=st.fixedSchedule||{};let schedules=Array.isArray(f)?f:(f.active&&f.time?[f]:[]);schedules.forEach((sch,si)=>{if(!sch||!sch.active||!sch.time)return;let days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];for(let d=1;d<=last;d++){let dt=new Date(y,m,d),dow=(dt.getDay()+6)%7;if(days.includes(dow)){let date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,fixedId='fixed-'+st.id+'-'+si+'-'+date,suspended=(data.rain||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),exists=data.classes.some(c=>c.date===date&&c.time===sch.time&&c.student===st.name);if(!exists&&!suspended)out.push({id:fixedId,student:st.name,date,time:sch.time,duration:Number(sch.duration||1),status:'Fija',note:'Horario fijo'});}}});});return out;}
+function fixedOccurrencesRange(studentName,days=60){let out=[];let start=new Date();start.setHours(0,0,0,0);for(let i=0;i<days;i++){let dt=new Date(start);dt.setDate(start.getDate()+i);let y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate();for(const c of fixedOccurrences(y,m)){if(c.student===studentName&&c.date===`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`)out.push(c)}}return out;}let viewDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);function isUuid(v){return typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)}
+function newUuid(){return crypto.randomUUID()}
+async function syncToSupabase(){
+  if(!currentSession) return {ok:false};
+  try{
+    // 1) Alumnos: Supabase is the source of truth for persistent fields.
+    for(const st of data.students){
+      if(!isUuid(st.id)) st.id=newUuid();
+      const row={
+        id:st.id,nombre:st.name,edad:Number(st.age)||null,nivel:st.level||null,
+        notas:st.notes||null,activo:true,tarifa_tipo:st.tariff||'individual',
+        precio:Number(st.price)||0,pagado:!!st.paid,golpes:st.hits||{},
+        lluvia_horas:Number(st.rainHours||0),recuperadas_horas:Number(st.recoveredHours||0)
+      };
+      const {error}=await supabaseClient.from('alumnos').upsert(row,{onConflict:'id'});
+      if(error) throw error;
+
+      const schedules=Array.isArray(st.fixedSchedule)?st.fixedSchedule:(st.fixedSchedule?.active?[st.fixedSchedule]:[]);
+      const {data:old,error:oldErr}=await supabaseClient.from('horarios_fijos').select('id').eq('alumno_id',st.id);
+      if(oldErr) throw oldErr;
+      if(old&&old.length){const {error}=await supabaseClient.from('horarios_fijos').update({activo:false}).eq('alumno_id',st.id);if(error)throw error;}
+      for(const f of schedules){if(!f?.time)continue;for(const day of (f.days||[f.day])){const hrow={alumno_id:st.id,dia_semana:Number(day||0),hora:f.time,duracion_minutos:Math.round(Number(f.duration||1)*60),activo:true};const {error}=await supabaseClient.from('horarios_fijos').insert(hrow);if(error)throw error;}}
+    }
+
+    // 2) Clases
+    for(const c of data.classes){
+      if(!isUuid(c.id)) c.id=newUuid();
+      const st=data.students.find(x=>x.name===c.student); if(!st) continue;
+      const tipo=(c.status==='Recuperación'||c.status==='recuperacion')?'recuperacion':'individual';
+      const estado=(c.status==='Lluvia'||c.status==='suspendida')?'suspendida':(c.status==='realizada'?'realizada':'programada');
+      const {error}=await supabaseClient.from('clases').upsert({id:c.id,alumno_id:st.id,fecha:c.date,hora:c.time||'00:00',duracion_minutos:Math.round(Number(c.duration||1)*60),tipo,estado,notas:c.note||null},{onConflict:'id'});
+      if(error) throw error;
+    }
+
+    // 3) Pagos
+    for(const pay of data.payments){
+      if(!isUuid(pay.id)) pay.id=newUuid();
+      const st=data.students.find(x=>x.name===pay.student); if(!st) continue;
+      const {error}=await supabaseClient.from('pagos').upsert({id:pay.id,alumno_id:st.id,monto:Number(pay.amount||0),fecha:pay.date||new Date().toISOString().slice(0,10),concepto:pay.type||null,estado:'pagado'},{onConflict:'id'});
+      if(error) throw error;
+    }
+
+    // 4) Planes
+    for(const pl of data.plans){
+      if(!isUuid(pl.id)) pl.id=newUuid();
+      const {error}=await supabaseClient.from('planes').upsert({id:pl.id,nombre:pl.title||'Plan',descripcion:pl.student||null,situacion:pl.situation||null,objetivo_tactico:pl.tactical||null,herramienta_tecnica:pl.technical||null,elemento_control:pl.control||null,principio_biomecanico:pl.bio||null,notas:[pl.game,pl.conditioned,pl.task,pl.regulated].filter(Boolean).join('\n\n')||null},{onConflict:'id'});
+      if(error) throw error;
+    }
+
+    // 5) Tarifas
+    const rateRows=[
+      {tipo:'por_clase',nombre:'Pago por clase',precio:Number(data.rates.class||0),activa:true},
+      {tipo:'mensual_individual',nombre:'Individual mensual',precio:Number(data.rates.individual||0),activa:true},
+      {tipo:'mensual_grupal',nombre:'Grupal mensual',precio:Number(data.rates.group||0),activa:true}
+    ];
+    for(const r of rateRows){
+      const {error}=await supabaseClient.from('tarifas').upsert(r,{onConflict:'tipo'});
+      if(error) throw error;
+    }
+
+    // 6) Suspensiones por lluvia. Se guardan como clases suspendidas.
+    for(const rain of data.rain||[]){
+      if(!isUuid(rain.id)) rain.id=newUuid();
+      const st=data.students.find(x=>x.name===rain.student); if(!st) continue;
+      const {error}=await supabaseClient.from('clases').upsert({id:rain.id,alumno_id:st.id,fecha:rain.date,hora:'00:00',duracion_minutos:Math.round(Number(rain.hours||1)*60),tipo:'individual',estado:'suspendida',notas:rain.note||'Suspensión por lluvia'},{onConflict:'id'});
+      if(error) throw error;
+    }
+
+    await setConfig('actividades_recurrentes',JSON.stringify(data.activities||[]));
+    localStorage.setItem(KEY,JSON.stringify(data));
+    return {ok:true};
+  }catch(err){console.error('Supabase sync error:',err);return {ok:false,error:err};}
+}
+async function save(){
+  normalizeActivities();
+  renderAll();
+  const result=await syncToSupabase();
+  if(!result.ok && result.error){ console.error(result.error); alert('No se pudo sincronizar con Supabase: '+(result.error.message||result.error)); return false; }
+  localStorage.setItem(KEY,JSON.stringify(data));
+  // Google Calendar: keep automatic sync independent from the manual button.
+  // The OAuth access token is short-lived, so refresh it silently when needed.
+  try{
+    if(!googleCalendarId) googleCalendarId=await getConfig('google_calendar_id');
+    if(googleCalendarId) await syncAllToGoogle(true);
+  }catch(err){
+    console.warn('Google Calendar auto-sync:',err);
+  }
+  return true;
+}
+function money(n){return '$'+Number(n||0).toLocaleString('es-AR')}function initials(n){return n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase()}function go(id,btn){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');renderAll()}function renderAll(){renderHome();renderStudents();renderAgenda();renderMoney();renderPlans()}function renderHome(){const total=data.students.reduce((s,x)=>s+x.price,0),paid=data.students.filter(x=>x.paid).reduce((s,x)=>s+x.price,0);const pendingTotal=data.students.reduce((s,x)=>s+Number(pendingHours(x)||0),0);document.getElementById('stats').innerHTML=`<div class="stat"><span>Alumnos activos</span><b>${data.students.length}</b></div><div class="stat"><span>Horas por recuperar</span><b>${pendingTotal}</b></div><div class="stat"><span>Cobrado</span><b>${money(paid)}</b></div><div class="stat"><span>Pendiente</span><b>${money(total-paid)}</b></div>`;let p=data.students.filter(x=>!x.paid);document.getElementById('pending').innerHTML=p.length?p.map(x=>`<div class="card row between"><div class="row"><div class="avatar">${initials(x.name)}</div><div><b>${x.name}</b><div class="muted">${money(x.price)}</div></div></div><span class="badge red">Pendiente</span></div>`).join(''):'<div class="card empty">Todo al día 👌</div>';let rec=data.students.filter(x=>pendingHours(x)>0);document.getElementById('pending').innerHTML+=rec.length?'<div class="sectionhead" style="margin-top:20px"><h2>Horas a recuperar</h2></div>'+rec.map(x=>`<div class="card row between"><div><b>${x.name}</b><div class="muted">Por lluvia</div></div><b style="color:#e65b67">${pendingHours(x)} h</b></div>`).join(''):''}
+function currentHits(x){if(!x.hits)x.hits={};if(x.hits[monthKey()]===undefined)x.hits[monthKey()]={Drive:0,Revés:0,Saque:0,Volea:0};return x.hits[monthKey()]}
+function renderStudents(){let q=(document.getElementById('studentSearch')?.value||'').toLowerCase();let arr=data.students.filter(x=>x.name.toLowerCase().includes(q));document.getElementById('studentList').innerHTML=arr.length?arr.map(x=>{let h=currentHits(x),open=window.openStudentCards?.has(String(x.id)),fs=Array.isArray(x.fixedSchedule)?x.fixedSchedule:(x.fixedSchedule?.active?[x.fixedSchedule]:[]),dayNames=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];return `<div class="card student-card ${open?'open':''}" id="student-${x.id}"><div class="row between student-summary" onclick="toggleStudentCard('${x.id}')"><div class="row"><div class="avatar">${initials(x.name)}</div><div><b>${x.name}</b><div class="muted">${x.age} años · ${x.level}</div></div></div><div class="row" style="gap:7px"><span class="badge ${x.paid?'':'red'}">${x.paid?'Pagado':'Pendiente'}</span><span class="chevron">⌄</span></div></div><div class="student-extra"><div class="muted">Golpes trabajados · ${new Date().toLocaleDateString('es-AR',{month:'long'})}</div><div class="hitgrid">${Object.entries(h).map(([k,v])=>`<div class="hit"><span>${k} <b>${v}</b></span><button onclick="event.stopPropagation();hit('${x.id}','${k}')">+1</button></div>`).join('')}</div><div class="card" style="box-shadow:none;background:#f7f8fa;margin:12px 0 0"><div class="row between"><b>📅 Clases semanales</b><button class="btn secondary small" onclick="event.stopPropagation();editStudent('${x.id}')">Editar</button></div>${fs.length?fs.map(f=>`<div class="muted" style="margin-top:7px">${(f.days||[f.day]).map(d=>dayNames[Number(d)]).join(' + ')} · ${f.time} · ${f.duration} h</div>`).join(''):'<div class="muted" style="margin-top:7px">Sin horario fijo</div>'}</div><div class="student-recovery" style="margin:12px 0 0;padding:12px;border-radius:14px;border:1px solid #e7eaf0"><div class="row between"><div><b style="font-size:13px">☔ Recuperaciones</b><div class="muted">Suspendidas: ${Number(x.rainHours||0)} h · Recuperadas: ${Number(x.recoveredHours||0)} h</div></div><b style="color:${pendingHours(x)>0?'#e65b67':'#20a36a'}">${pendingHours(x)} h pendientes</b></div><button class="btn secondary small" style="margin-top:9px" onclick="event.stopPropagation();openModal('rainStudent','${x.id}')">+ Suspender / recuperar</button></div><div class="muted" style="margin-top:10px">${x.notes||''}</div><div class="actions"><button class="btn secondary small" onclick="event.stopPropagation();editStudent('${x.id}')">Editar</button><button class="btn small" onclick="event.stopPropagation();togglePaid('${x.id}')">${x.paid?'Marcar pendiente':'Marcar pagado'}</button><button class="btn secondary small student-delete" onclick="event.stopPropagation();deleteStudent('${x.id}')">Eliminar</button></div></div></div>`}).join(''):'<div class="card empty">No encontré alumnos.</div>';renderActivityManager();}
+function toggleStudentCard(id){if(!window.openStudentCards)window.openStudentCards=new Set();id=String(id);window.openStudentCards.has(id)?window.openStudentCards.delete(id):window.openStudentCards.add(id);renderStudents()}
+window.openStudentCards=new Set();
+function normalizeActivities(){
+  const list=Array.isArray(data.activities)?data.activities:[];
+  const out=[];
+  const byKey=new Map();
+  for(const raw of list){
+    if(!raw) continue;
+    const a={...raw};
+    a.name='Escuelita';
+    a.days=[...new Set((Array.isArray(a.days)?a.days:[]).map(Number).filter(n=>n>=0&&n<=6))].sort((x,y)=>x-y);
+    a.time=String(a.time||'');
+    a.duration=Number(a.duration||1);
+    a.amount=Number(a.amount||0);
+    a.occurrences={...(a.occurrences||{})};
+    // Exact duplicate configurations are one Escuelita, not multiple recurring activities.
+    const key=`${a.days.join(',')}|${a.time}|${a.duration}`;
+    const existing=byKey.get(key);
+    if(!existing){
+      byKey.set(key,a);
+      out.push(a);
+    }else{
+      // Keep the first configured amount, but preserve any per-date decisions from duplicates.
+      if(!existing.amount && a.amount) existing.amount=a.amount;
+      for(const [date,occ] of Object.entries(a.occurrences)){
+        if(!existing.occurrences[date] || existing.occurrences[date].status==='not_required') existing.occurrences[date]=occ;
+      }
+    }
+  }
+  data.activities=out;
+  return out;
+}
+
+function activityOccurrences(y,m){let out=[];let last=new Date(y,m+1,0).getDate();for(const a of (data.activities||[])){for(let d=1;d<=last;d++){let dt=new Date(y,m,d),dow=(dt.getDay()+6)%7;if((a.days||[]).map(Number).includes(dow)){let date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;let occ=(a.occurrences||{})[date]||{};if(occ.status!=='not_required')out.push({id:`activity-${a.id}-${date}`,activityId:a.id,name:a.name,date,time:a.time,duration:Number(a.duration||1),status:occ.status==='paid'?'Me pagaron':(occ.status==='needed'?'Me necesitaron':'A confirmar'),amount:Number(occ.amount??a.amount??0),kind:'activity'});}}}return out;}
+function activityUpcoming(days=30,includeNotRequired=false){let out=[];let start=new Date();start.setHours(0,0,0,0);for(let i=0;i<days;i++){let dt=new Date(start);dt.setDate(start.getDate()+i);let date=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;for(const a of (data.activities||[])){let dow=(dt.getDay()+6)%7;if((a.days||[]).map(Number).includes(dow)){let occ=(a.occurrences||{})[date]||{};if(includeNotRequired || occ.status!=='not_required')out.push({id:`activity-${a.id}-${date}`,activityId:a.id,name:a.name,date,time:a.time,duration:Number(a.duration||1),status:occ.status==='paid'?'Me pagaron':(occ.status==='needed'?'Me necesitaron':(occ.status==='not_required'?'No me necesitaron':'A confirmar')),amount:Number(occ.amount??a.amount??0),kind:'activity'});}}}return out.sort((a,b)=>(a.date+a.time+a.activityId).localeCompare(b.date+b.time+b.activityId));}
+function renderActivityManager(){const el=document.getElementById('activityManager');if(!el)return;const items=activityUpcoming(45,true);el.innerHTML=`<div class="sectionhead" style="margin-top:16px"><h2>Escuelitas</h2></div>`+(data.activities||[]).map(a=>{const next=items.filter(x=>x.activityId===a.id).slice(0,6);return `<div class="card"><div class="row between"><div><b>${a.name}</b><div class="muted">${(a.days||[]).map(d=>['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'][Number(d)]).join(' + ')} · ${a.time} · ${a.duration} h · ${money(a.amount)}</div></div><div class="actions" style="margin:0"><button class="btn secondary small" onclick="openModal('activity','${a.id}')">Editar</button><button class="btn secondary small student-delete" onclick="deleteActivity('${a.id}')">Eliminar</button></div></div>${next.map(o=>`<div class="row between" style="margin-top:9px;padding-top:9px;border-top:1px solid var(--line)"><div><b>${o.date.split('-').reverse().join('/')}</b><div class="muted">${o.time} · ${o.status}${o.status==='Me necesitaron'||o.status==='Me pagaron'?' · '+money(o.amount):''}</div></div><div class="actions" style="margin:0"><button class="btn small ${o.status==='Me necesitaron'||o.status==='Me pagaron'?'selected':''}" onclick="activityNeeded('${a.id}','${o.date}')">Me necesitaron</button><button class="btn small ${o.status==='No me necesitaron'?'selected':''}" onclick="activityNotNeeded('${a.id}','${o.date}')">No me necesitaron</button><button class="btn small ${o.status==='Me pagaron'?'selected':''}" onclick="activityPaid('${a.id}','${o.date}')">Me pagaron</button></div></div>`).join('')}</div>`}).join('')||'<div class="card empty">Todavía no hay actividades.</div>';}
+function renderAgenda(){let y=viewDate.getFullYear(),m=viewDate.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),start=(first.getDay()+6)%7,total=Math.ceil((start+last.getDate())/7)*7;document.getElementById('monthTitle').textContent=viewDate.toLocaleDateString('es-AR',{month:'long',year:'numeric'});let fixed=fixedOccurrences(y,m);let html=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(x=>`<div class="dow">${x}</div>`).join('');for(let i=0;i<total;i++){let d=i-start+1,valid=d>0&&d<=last.getDate(),date=valid?`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';let ev=[...fixed.filter(c=>c.date===date),...data.classes.filter(c=>c.date===date),...activityOccurrences(y,m).filter(c=>c.date===date)],rain=data.rain.filter(r=>r.date===date);html+=`<div class="daycell ${valid?'':'mutedday'}"><div class="daynum">${valid?d:''}</div>${ev.slice(0,3).map(c=>`<span class="event ${c.status==='Recuperación'?'recovery':''}">${c.time?c.time+' ':''}${c.kind==='activity'?'Escuelita':(c.student||c.name||'Clase')} · ${c.status}</span>`).join('')}${ev.length>3?`<span class="event">+${ev.length-3} más</span>`:''}${rain.slice(0,2).map(r=>`<span class="event rain">☔ ${r.student} · ${r.hours}h</span>`).join('')}</div>`}document.getElementById('calendar').innerHTML=html;let pending=data.students.reduce((s,x)=>s+pendingHours(x),0),scheduled=data.classes.filter(c=>c.status==='Recuperación'&&c.date>=new Date().toISOString().slice(0,10));document.getElementById('rainHours').innerHTML=`<div class="hours">☔ <b>${pending} h</b> pendientes de recuperar · ${data.students.filter(x=>pendingHours(x)>0).map(x=>x.name+' '+pendingHours(x)+'h').join(' · ')||'ninguno'}</div>${scheduled.length?`<div class="card" style="margin-top:10px"><b>Recuperaciones programadas</b>${scheduled.map(c=>`<div style="margin-top:8px;font-size:13px">🟠 ${c.date.split('-').reverse().join('/')} · ${c.time||''} · ${c.student} — ${c.duration} h</div>`).join('')}</div>`:''}`}function changeMonth(n){viewDate=new Date(viewDate.getFullYear(),viewDate.getMonth()+n,1);renderAgenda()}
+function activityPendingTotal(){let total=0;for(const a of (data.activities||[])){for(const o of Object.values(a.occurrences||{})){if(o.status==='needed'&&!o.paid)total+=Number(o.amount??a.amount??0)}}return total}
+function activityCollectedTotal(){return data.payments.filter(p=>p.type==='activity').reduce((s,p)=>s+Number(p.amount||0),0)}
+function renderMoney(){let total=data.payments.reduce((s,x)=>s+Number(x.amount||0),0),pending=data.students.filter(x=>!x.paid).reduce((s,x)=>s+Number(x.price||0),0);pending+=activityPendingTotal();document.getElementById('moneyStats').innerHTML=`<div class="stat"><span>Cobrado</span><b>${money(total)}</b></div><div class="stat"><span>Por cobrar</span><b>${money(pending)}</b></div>`;document.getElementById('ratesBox').innerHTML=`<div class="card"><div class="row between"><span>Pago por clase</span><b>${money(data.rates.class)}</b></div><div class="row between" style="margin-top:10px"><span>Individual mensual</span><b>${money(data.rates.individual)}</b></div><div class="row between" style="margin-top:10px"><span>Grupal mensual</span><b>${money(data.rates.group)}</b></div></div>`;document.getElementById('paymentsList').innerHTML=[...data.payments].reverse().map(p=>`<div class="card row between"><div><b>${p.student}</b><div class="muted">${p.date} · ${labelRate(p.type)}</div></div><b>${money(p.amount)}</b></div>`).join('')||'<div class="card empty">No hay movimientos.</div>'}function labelRate(t){return t==='activity'?'Escuelita':t==='class'?'Por clase':t==='group'?'Grupal mensual':'Individual mensual'}
+function renderPlans(){const el=document.getElementById('plansList');if(!el)return;if(!data.plans.length){el.innerHTML='<div class="card empty">Todavía no hay planes.</div>';return}const groups={};data.plans.forEach(p=>{const key=p.student||'__none__';(groups[key]??=[]).push(p)});const names=Object.keys(groups).sort((a,b)=>a==='__none__'?1:b==='__none__'?-1:a.localeCompare(b,'es'));el.innerHTML=names.map((key,i)=>{const label=key==='__none__'?'Sin alumno':key;return `<details class="card plan-group" ${i===0?'open':''}><summary style="cursor:pointer;font-weight:750;list-style:none;display:flex;justify-content:space-between;align-items:center"><span>${label}</span><span class="muted">${groups[key].length} ${groups[key].length===1?'plan':'planes'} · ⌄</span></summary><div style="margin-top:12px">${groups[key].map(p=>`<div class="card" style="box-shadow:none;border:1px solid var(--line);margin-bottom:10px"><div class="row between"><b>${p.title}</b><div class="actions" style="margin:0"><button class="btn secondary small" onclick="openModal('plan','${p.id}')">Editar</button><button class="btn secondary small" onclick="deletePlan('${p.id}')">×</button></div></div>${[['J — Juego',p.game],['A — Acondicionado',p.conditioned],['T — Tarea',p.task],['J — Juego regulado',p.regulated]].map(a=>`<div class="planblock"><b>${a[0]}</b>${a[1]||''}</div>`).join('')}<div class="muted" style="margin-top:10px">Situación: ${p.situation||'-'} · Táctica: ${p.tactical||'-'} · Técnica: ${p.technical||'-'} · Control: ${p.control||'-'} · Biomecánica: ${p.bio||'-'}</div></div>`).join('')}</div></details>`}).join('')}
+function openModal(type,id){let s=document.getElementById('sheet');document.getElementById('modal').classList.add('show');if(type==='student'){let x=data.students.find(a=>a.id==id)||{name:'',age:'',level:'',notes:'',tariff:'individual',fixedSchedule:{active:false,day:0,time:'',duration:1}};let f=x.fixedSchedule||{};s.innerHTML=`<h2>${id?'Editar':'Nuevo'} alumno</h2><form class="form" onsubmit="saveStudent(event,'${id||''}')"><label>Nombre<input required name="name" value="${x.name}"></label><label>Edad<input type="number" name="age" value="${x.age}"></label><label>Nivel<input name="level" value="${x.level}"></label><label>Tarifa<select name="tariff" onchange="setStudentPrice(this)"><option value="class" ${x.tariff==='class'?'selected':''}>Pago por clase</option><option value="individual" ${x.tariff==='individual'?'selected':''}>Individual mensual</option><option value="group" ${x.tariff==='group'?'selected':''}>Grupal mensual</option><option value="custom" ${x.tariff==='custom'?'selected':''}>Personalizada</option></select></label><label>Precio acordado<input id="studentPrice" type="number" name="price" min="0" step="1" value="${Number(x.price||0)}" required><small class="muted">Podés modificarlo aunque la tarifa sea mensual o por clase.</small></label><div class="card" style="box-shadow:none;background:#f7f8fa;margin:0"><b>📅 Clases semanales</b><label style="margin-top:10px;display:block">Días de la semana</label><div class="hitgrid">${['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].map((d,i)=>`<label class="hit"><span>${d}</span><input type="checkbox" name="fixedDays" value="${i}" ${(Array.isArray(f)?f.flatMap(z=>z.days||[z.day]).map(Number):[]).includes(i)?'checked':''}></label>`).join('')}</div><label style="margin-top:9px;display:block">Hora<input type="time" name="fixedTime" value="${f.time||''}"></label><label style="margin-top:9px;display:block">Duración<input type="number" name="fixedDuration" min="0.5" step="0.5" value="${f.duration||1}"></label><small class="muted">Podés elegir varios días. Todos usan la misma hora y duración.</small></div><label>Observaciones<textarea name="notes">${x.notes||''}</textarea></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='class'){s.innerHTML=`<h2>Nueva clase</h2><form class="form" onsubmit="saveClass(event)"><label>Tipo<select name="type"><option>Clase suelta</option><option>Recuperación</option><option>Clase grupal</option></select></label><div id="normalClassFields"><label>Alumno<select name="student">${data.students.map(x=>`<option>${x.name}</option>`).join('')}</select></label><label>Fecha<input type="date" name="date" required></label></div><label>Hora<input type="time" name="time" required></label><label>Duración (horas)<input type="number" name="duration" value="1" min="0.5" step="0.5"></label><label>Nota<input name="note" placeholder="Objetivo de la clase"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='activity'){let a=id?(data.activities||[]).find(x=>String(x.id)===String(id)):null;a=a||{name:'Escuelita',days:[1,3],time:'17:00',duration:1,amount:0,occurrences:{}};s.innerHTML=`<h2>${id?'Editar':'Nueva'} actividad recurrente</h2><form class="form" onsubmit="saveActivity(event,'${id||''}')"><label>Nombre<input required name="name" value="${a.name||''}"></label><label>Días</label><div class="hitgrid">${['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].map((d,i)=>`<label class="hit"><span>${d}</span><input type="checkbox" name="days" value="${i}" ${(a.days||[]).map(Number).includes(i)?'checked':''}></label>`).join('')}</div><label>Hora<input type="time" name="time" value="${a.time||''}" required></label><label>Duración (horas)<input type="number" name="duration" min="0.5" step="0.5" value="${a.duration||1}" required></label><label>Importe por ocurrencia<input type="number" name="amount" min="0" step="1" value="${Number(a.amount||0)}" required></label><p class="sub">Cada fecha queda como “A confirmar”. Si te necesitan, la marcás y podés modificar el importe. Si no, “No requerida” y desaparece de Google Calendar.</p><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='rainStudent'){let x=data.students.find(a=>a.id==id);let fixedAvailable=fixedOccurrencesRange(x.name,60);let available=[...data.classes.filter(c=>c.student===x.name&&c.status!=='Lluvia'&&c.status!=='Recuperación'),...fixedAvailable].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));s.innerHTML=`<h2>Recuperación — ${x.name}</h2><p class="sub" style="margin:6px 0 18px">Pendiente actual: <b>${pendingHours(x)} h</b></p><form class="form" onsubmit="saveRainStudent(event,'${id}')"><label>Acción<select name="action" onchange="document.getElementById('suspendClassBox').style.display=this.value==='rain'?'block':'none'"><option value="rain">Suspender por lluvia</option><option value="recover">Registrar recuperación</option></select></label><div id="suspendClassBox"><label>Clase a suspender<select name="classToSuspend"><option value="">Seleccionar clase</option>${available.map(c=>`<option value="${c.id}">${c.date.split('-').reverse().join('/')} · ${c.time||''} · ${c.duration||1} h</option>`).join('')}</select></label></div><label>Horas<input type="number" name="hours" value="1" min="0.5" step="0.5" required></label><label>Fecha<input type="date" name="date" value="${new Date().toISOString().slice(0,10)}" required></label><label>Hora (si es recuperación)<input type="time" name="time"></label><label>Detalle<input name="note" placeholder="Ej. clase suspendida / recuperación"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='payment'){s.innerHTML=`<h2>Registrar pago</h2><form class="form" onsubmit="savePayment(event)"><label>Alumno<select name="student" onchange="suggestAmount(this)">${data.students.map(x=>`<option>${x.name}</option>`).join('')}</select></label><label>Tarifa<select id="ptype" name="type" onchange="suggestAmount(document.querySelector('[name=student]'))"><option value="class">Pago por clase</option><option value="individual" selected>Individual mensual</option><option value="group">Grupal mensual</option></select></label><label>Monto<input id="pamount" type="number" name="amount" value="${data.rates.individual}" required></label><label>Fecha<input type="date" name="date" value="${new Date().toISOString().slice(0,10)}" required></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='rates'){s.innerHTML=`<h2>Tarifas</h2><form class="form" onsubmit="saveRates(event)"><label>Pago por clase<input type="number" name="class" value="${data.rates.class}"></label><label>Individual mensual<input type="number" name="individual" value="${data.rates.individual}"></label><label>Grupal mensual<input type="number" name="group" value="${data.rates.group}"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='plan'){let p=id?data.plans.find(x=>String(x.id)===String(id)):null;p=p||{title:'',student:'',game:'',conditioned:'',task:'',regulated:'',situation:'',tactical:'',technical:'',control:'',bio:''};s.innerHTML=`<h2>${id?'Editar':'Nueva'} planificación JAJ</h2><form class="form" onsubmit="savePlan(event,'${id||''}')"><label>Alumno<select name="student"><option value="">Sin alumno</option>${data.students.map(x=>`<option value="${x.name.replace(/"/g,'&quot;')}" ${p.student===x.name?'selected':''}>${x.name}</option>`).join('')}</select></label><label>Título<input name="title" required placeholder="Ej. Fondo-fondo — mover al rival" value="${p.title||''}"></label><label>J — Juego<textarea name="game" placeholder="¿Qué juego planteo inicialmente?">${p.game||''}</textarea></label><label>A — Acondicionado<textarea name="conditioned" placeholder="Acondicionamiento relacionado al juego">${p.conditioned||''}</textarea></label><label>T — Tarea<textarea name="task" placeholder="Tarea con consigna y progresión">${p.task||''}</textarea></label><label>J — Juego regulado<textarea name="regulated" placeholder="Vuelta al juego con reglas">${p.regulated||''}</textarea></label><label>Situación<input name="situation" value="${p.situation||''}"></label><label>Objetivo táctico<input name="tactical" value="${p.tactical||''}"></label><label>Herramienta técnica<input name="technical" value="${p.technical||''}"></label><label>Elemento de control<input name="control" value="${p.control||''}"></label><label>Principio biomecánico<input name="bio" value="${p.bio||''}"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='settings'){s.innerHTML=`<h2>Ajustes</h2><div class="form" style="margin-top:18px"><label>Modo<select id="themeSelect" onchange="setTheme(this.value)"><option value="light">Claro</option><option value="dark">Oscuro</option></select></label><label>Tipografía<select id="fontSelect" onchange="setFont(this.value)"><option value="system">Sistema / SF Pro (iOS)</option><option value="inter">Inter</option><option value="segoe">Segoe UI</option><option value="avenir">Avenir Next</option><option value="georgia">Georgia</option></select></label></div><div class="card" style="margin-top:18px"><div class="row between"><div><b>Google Calendar</b><div class="muted" id="googleCalendarStatus">Sin conectar</div></div><button class="btn" onclick="connectGoogleCalendar()">Conectar</button></div><p class="sub" style="margin:10px 0 0">Crea un calendario separado llamado “Clases” y sincroniza tus clases.</p></div><p class="sub" style="margin:16px 0">Los cambios se guardan en este navegador.</p><button class="btn" onclick="closeModal()">Cerrar</button>`;document.getElementById('themeSelect').value=localStorage.getItem('mcTheme')||'light';document.getElementById('fontSelect').value=localStorage.getItem('mcFont')||'system'}}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+async function googleApi(path,options={},retry=true){if(!googleToken)await ensureGoogleAccessToken();const headers=Object.assign({'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},options.headers||{});const res=await fetch('https://www.googleapis.com/calendar/v3/'+path,Object.assign({},options,{headers}));const text=await res.text();let body={};try{body=text?JSON.parse(text):{}}catch{}if(!res.ok){if(res.status===401&&retry){googleToken=null;await refreshPersistentGoogleToken();return googleApi(path,options,false)}throw new Error(body.error?.message||('Google Calendar error '+res.status))}return body}
+async function getConfig(key){const {data,error}=await supabaseClient.from('configuracion').select('valor').eq('clave',key).maybeSingle();if(error)throw error;return data?.valor||null}
+async function setConfig(key,value){const {error}=await supabaseClient.from('configuracion').upsert({clave:key,valor:String(value)},{onConflict:'clave'});if(error)throw error}
+function updateGoogleStatus(){const el=document.getElementById('googleCalendarStatus');if(el)el.textContent=googleCalendarId?'Conectado · calendario “Clases”':'Sin conectar'}
+async function ensureGoogleCalendar(){
+  const makeCalendar=async()=>{const cal=await googleApi('calendars',{method:'POST',body:JSON.stringify({summary:'Clases',description:'Calendario de clases de Mis Clases'})});googleCalendarId=cal.id;await setConfig('google_calendar_id',googleCalendarId);return googleCalendarId};
+  if(!googleCalendarId){const stored=await getConfig('google_calendar_id');if(stored)googleCalendarId=stored;}
+  if(googleCalendarId){
+    try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}`);return googleCalendarId}
+    catch(e){
+      const msg=String(e.message||e).toLowerCase();
+      if(msg.includes('resource has been deleted')||msg.includes('not found')||msg.includes('404')||msg.includes('410')){googleCalendarId=null;await setConfig('google_calendar_id','');return await makeCalendar();}
+      throw e;
+    }
+  }
+  return await makeCalendar();
+}
+function googleDateTime(date,time,durationHours){const start=new Date(`${date}T${(time||'00:00').slice(0,5)}:00`);const end=new Date(start.getTime()+Number(durationHours||1)*3600000);const iso=d=>{const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}:00`};return {start:iso(start),end:iso(end)} }
+async function syncClassToGoogle(c){if(!googleCalendarId)await ensureGoogleCalendar();if(String(c.id).startsWith('fixed-'))return;if(c.status==='Lluvia'||c.status==='suspendida'){let eventId=c.googleEventId;if(!eventId&&isUuid(c.id)){try{const row=await supabaseClient.from('clases').select('google_event_id').eq('id',c.id).maybeSingle();eventId=row.data?.google_event_id||null}catch{}}if(eventId){try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(eventId)}`,{method:'DELETE'})}catch(e){if(!['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))throw e}}c.googleEventId=null;if(isUuid(c.id))await supabaseClient.from('clases').update({google_event_id:null}).eq('id',c.id);return}const studentObj=data.students.find(x=>String(x.name).trim()===String(c.student).trim()); const isGroup=(c.classType==='group'||c.grouped===true||c.grouped==='1'||c.status==='Clase grupal'||(c.status==='Recuperación'&&studentObj?.tariff==='group')); const title=(c.status==='Recuperación'?'R - ':'')+c.student;const dt=googleDateTime(c.date,c.time,c.duration);const body={summary:title,description:c.note||'Clase creada desde Mis Clases',start:{dateTime:dt.start,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},end:{dateTime:dt.end,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},extendedProperties:{private:{mis_clases:'1',student:c.student,kind:'class'}}};let eventId=c.googleEventId;if(!eventId&&isUuid(c.id)){try{const row=await supabaseClient.from('clases').select('google_event_id').eq('id',c.id).maybeSingle();eventId=row.data?.google_event_id||null}catch{}}if(eventId){try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(eventId)}`,{method:'PUT',body:JSON.stringify(body)});c.googleEventId=eventId}catch(e){if(String(e.message).toLowerCase().includes('resource has been deleted')||String(e.message).includes('Not Found')||String(e.message).includes('404')){c.googleEventId=null;eventId=null}else throw e}}if(!eventId){const ev=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events`,{method:'POST',body:JSON.stringify(body)});c.googleEventId=ev.id;if(isUuid(c.id))await supabaseClient.from('clases').update({google_event_id:ev.id}).eq('id',c.id)}}
+async function deleteGoogleEventsForStudent(name){if(!googleCalendarId||!name)return;const q=encodeURIComponent(name);let pageToken='';do{const data=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events?singleEvents=false&showDeleted=false&maxResults=250&q=${q}${pageToken?'&pageToken='+encodeURIComponent(pageToken):''}`);for(const ev of (data.items||[])){const summary=ev.summary||'';if(summary===name||summary===`R - ${name}`||summary===`Part. · ${name}`||summary===`R - Part. · ${name}`||summary===`Grupal · ${name}`||ev.extendedProperties?.private?.student===name){try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(ev.id)}`,{method:'DELETE'})}catch(e){if(!['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))throw e}}}pageToken=data.nextPageToken||''}while(pageToken)}
+async function cleanupGoogleOrphans(){if(!googleCalendarId)return;const active=new Set(data.students.map(x=>String(x.name).trim()));let pageToken='';do{const dataPage=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events?singleEvents=false&showDeleted=false&maxResults=250${pageToken?'&pageToken='+encodeURIComponent(pageToken):''}`);for(const ev of (dataPage.items||[])){const summary=String(ev.summary||'').trim();const privateProps=ev.extendedProperties?.private||{};const tagged=privateProps.mis_clases==='1';const studentProp=String(privateProps.student||'').trim();const match=summary.match(/^(?:R - )?(.+)$/);const studentName=studentProp|| (match?String(match[1]).trim():'');const looksLikeOurEvent=tagged||summary.startsWith('Part. · ')||summary.startsWith('R - Part. · ')||summary.startsWith('Grupal · ');if(looksLikeOurEvent&&studentName&&!active.has(studentName)){try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(ev.id)}`,{method:'DELETE'})}catch(e){if(!['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))throw e}}}pageToken=dataPage.nextPageToken||''}while(pageToken)}
+async function syncFixedSuspensionsToGoogle(){if(!googleCalendarId)return;let map={};try{map=JSON.parse(await getConfig('google_fixed_event_ids')||'{}')}catch{};for(const rain of (data.rain||[])){if(!rain.fixedOccurrenceId||!rain.fixedStudentId||!rain.date)continue;const dtRain=new Date(`${rain.date}T00:00:00`);const selectedDay=(dtRain.getDay()+6)%7;const seriesId=map[`${rain.fixedStudentId}|${selectedDay}`]||map[rain.fixedStudentId];if(!seriesId)continue;try{const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;const startLocal=new Date(`${rain.date}T00:00:00`);const endLocal=new Date(startLocal.getTime()+86400000);const params=`singleEvents=true&showDeleted=false&timeMin=${encodeURIComponent(startLocal.toISOString())}&timeMax=${encodeURIComponent(endLocal.toISOString())}&maxResults=20`;const res=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(seriesId)}/instances?${params}`,{method:'GET'});for(const ev of (res.items||[])){const instDate=String(ev.originalStartTime?.dateTime||ev.start?.dateTime||'').slice(0,10);if(instDate===rain.date){try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(ev.id)}`,{method:'DELETE'})}catch(e){if(!['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))throw e}}}}catch(e){console.warn('No se pudo suspender la ocurrencia fija en Google Calendar:',e)}}}
+async function syncFixedSchedulesToGoogle(){
+  const key='google_fixed_event_ids';
+  let oldMap={};
+  try{oldMap=JSON.parse(await getConfig(key)||'{}')}catch{}
+  const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Recuperamos todos los eventos fijos actuales para poder reutilizarlos y limpiar duplicados.
+  const existingFixed=new Map();
+  let pageToken='';
+  do{
+    const qs=`singleEvents=false&showDeleted=false&maxResults=250${pageToken?'&pageToken='+encodeURIComponent(pageToken):''}`;
+    const page=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events?${qs}`);
+    for(const ev of (page.items||[])){
+      const pp=ev.extendedProperties?.private||{};
+      if(pp.mis_clases==='1' && pp.kind==='fixed') existingFixed.set(ev.id,ev);
+    }
+    pageToken=page.nextPageToken||'';
+  }while(pageToken);
+
+  // Normalizamos todos los horarios semanales de cada alumno.
+  // Cada combinación día + hora + duración genera una serie semanal independiente.
+  const groups=new Map();
+  for(const st of data.students){
+    const raw=st.fixedSchedule;
+    const schedules=Array.isArray(raw)?raw:(raw?.active?[raw]:[]);
+    for(const sch of schedules){
+      if(!sch?.active||!sch.time)continue;
+      const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
+      for(const selectedDay of days.filter(d=>Number.isInteger(d)&&d>=0&&d<=6)){
+        const time=String(sch.time).slice(0,5);
+        const duration=Number(sch.duration||1);
+        const isGroup=st.tariff==='group';
+        const groupKey=isGroup
+          ? `group|${selectedDay}|${time}|${duration}`
+          : `student|${st.id}|${selectedDay}|${time}|${duration}`;
+        if(!groups.has(groupKey))groups.set(groupKey,{day:selectedDay,time,duration,members:[]});
+        groups.get(groupKey).members.push(st);
+      }
+    }
+  }
+
+  const newMap={};
+  const usedIds=new Set();
+  for(const [groupKey,g] of groups){
+    const members=g.members;
+    const selectedDay=Number(g.day);
+    const dow=(selectedDay+1)%7; // Google: Sun=0, Mon=1...
+    const [hh,mm]=g.time.split(':').map(Number);
+    const start=new Date();
+    start.setHours(hh,mm,0,0);
+    const today=start.getDay();
+    let daysUntil=(dow-today+7)%7;
+    if(daysUntil===0 && start.getTime()<=Date.now())daysUntil=7;
+    start.setDate(start.getDate()+daysUntil);
+    const date=start.toISOString().slice(0,10);
+    const endDate=new Date(start.getTime()+g.duration*3600000);
+    const endH=endDate.getHours(),endM=endDate.getMinutes();
+    const names=members.map(x=>x.name).filter(Boolean);
+    const desiredSummary=names.join(' + ');
+
+    const event={
+      summary:desiredSummary,
+      description:'Horario fijo de Mis Clases',
+      start:{dateTime:`${date}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`,timeZone:tz},
+      end:{dateTime:`${date}T${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}:00`,timeZone:tz},
+      recurrence:[`RRULE:FREQ=WEEKLY;BYDAY=${['SU','MO','TU','WE','TH','FR','SA'][dow]}`],
+      extendedProperties:{private:{mis_clases:'1',student:names.join(' + '),kind:'fixed',grouped:members.length>1?'1':'0',weekday:String(selectedDay),time:g.time}}
+    };
+
+    // Intentamos reutilizar un evento ya existente que corresponda al mismo grupo.
+    let eventId=oldMap[groupKey]||null;
+    if(!eventId){
+      for(const [id,ev] of existingFixed){
+        if(usedIds.has(id))continue;
+        const pp=ev.extendedProperties?.private||{};
+        const evNames=String(pp.student||'').split(' + ').map(x=>x.trim()).filter(Boolean).sort().join('|');
+        const wanted=names.slice().sort().join('|');
+        const evDow=Number(pp.weekday);
+        const evTime=String(pp.time||ev.start?.dateTime||'').slice(11,16);
+        if(evNames===wanted && evDow===selectedDay && evTime===g.time){eventId=id;break;}
+      }
+    }
+
+    if(eventId){
+      try{
+        await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(eventId)}`,{method:'PUT',body:JSON.stringify(event)});
+      }catch(e){
+        const msg=String(e.message||e);
+        if(!['Not Found','Resource has been deleted','404','410'].some(x=>msg.includes(x)))throw e;
+        eventId=null;
+      }
+    }
+    if(!eventId){
+      const ev=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events`,{method:'POST',body:JSON.stringify(event)});
+      eventId=ev.id;
+    }
+
+    usedIds.add(eventId);
+    // Guardamos el mismo ID por alumno/día para que lluvia pueda borrar una sola ocurrencia.
+    for(const st of members){
+      newMap[`${st.id}|${selectedDay}`]=eventId;
+    }
+    newMap[groupKey]=eventId;
+  }
+
+  // Borra eventos fijos antiguos/duplicados que ya no representan horarios actuales.
+  for(const [oldId] of existingFixed){
+    if(usedIds.has(oldId))continue;
+    try{
+      await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(oldId)}`,{method:'DELETE'});
+    }catch(e){
+      const msg=String(e.message||e);
+      if(!['Not Found','Resource has been deleted','404','410'].some(x=>msg.includes(x)))throw e;
+    }
+  }
+
+  await setConfig(key,JSON.stringify(newMap));
+}
+
+async function googleTokenFunction(body){
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  if(!session) throw new Error('La sesión de Mis Clases no está activa.');
+  currentSession=session;
+  const res=await fetch(GOOGLE_TOKEN_FUNCTION,{method:'POST',headers:{'Authorization':'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const text=await res.text();let data={};try{data=text?JSON.parse(text):{}}catch{}
+  if(!res.ok) throw new Error(data.error||('Google Calendar token error '+res.status));
+  return data;
+}
+async function refreshPersistentGoogleToken(){
+  const data=await googleTokenFunction({action:'refresh'});
+  if(data.connected===false){googleToken=null;return false;}
+  googleToken=data.access_token||null;
+  if(data.calendar_id) googleCalendarId=data.calendar_id;
+  return !!googleToken;
+}
+async function getGoogleClientId(){
+  const data=await googleTokenFunction({action:'client_id'});
+  if(!data.client_id) throw new Error('No se configuró GOOGLE_CLIENT_ID en Supabase.');
+  return data.client_id;
+}
+function connectGoogleCalendar(){
+  getGoogleClientId().then(clientId=>{
+    const state=crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random();
+    sessionStorage.setItem('google_oauth_state',state);
+    const params=new URLSearchParams({client_id:clientId,redirect_uri:GOOGLE_REDIRECT_URI,response_type:'code',scope:GOOGLE_SCOPE,access_type:'offline',prompt:'consent',include_granted_scopes:'true',state});
+    window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+params.toString();
+  }).catch(e=>{console.error(e);alert('No se pudo iniciar Google Calendar: '+(e.message||e))});
+}
+async function handleGoogleOAuthCallback(){
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get('code');
+  const state=params.get('state');
+  const error=params.get('error');
+  if(!code&&!error)return false;
+  if(error)throw new Error('Google canceló la conexión: '+error);
+  const expected=sessionStorage.getItem('google_oauth_state');
+  if(!state||!expected||state!==expected)throw new Error('No se pudo validar la conexión con Google.');
+  sessionStorage.removeItem('google_oauth_state');
+  const data=await googleTokenFunction({action:'exchange',code,redirect_uri:GOOGLE_REDIRECT_URI});
+  googleToken=data.access_token||null;
+  if(data.calendar_id)googleCalendarId=data.calendar_id;
+  window.history.replaceState({},document.title,window.location.pathname);
+  await syncAllToGoogle();
+  updateGoogleStatus();
+  return true;
+}
+async function ensureGoogleAccessToken(){
+  if(googleToken)return googleToken;
+  const ok=await refreshPersistentGoogleToken();
+  if(!ok)throw new Error('Google Calendar no está conectado.');
+  return googleToken;
+}
+async function syncAllToGoogle(auto=false){await ensureGoogleAccessToken();await ensureGoogleCalendar();await cleanupGoogleOrphans();for(const c of data.classes)await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle();updateGoogleStatus();return true}
+async function initGoogleCalendar(){
+  try{
+    googleCalendarId=await getConfig('google_calendar_id');
+    const connected=await refreshPersistentGoogleToken();
+    updateGoogleStatus();
+    return connected;
+  }catch(e){console.warn('Google Calendar config:',e.message);googleToken=null;updateGoogleStatus();return false}
+}
+function vals(f){return Object.fromEntries(new FormData(f).entries())}async function setStudentPrice(sel){const p=document.getElementById('studentPrice');if(!p)return;const rate=sel.value==='class'?data.rates.class:sel.value==='group'?data.rates.group:sel.value==='individual'?data.rates.individual:Number(p.value||0);if(sel.value!=='custom')p.value=rate}async function saveStudent(e,id){e.preventDefault();let v=vals(e.target),price=Number(v.price||0);let fixedDays=[...e.target.querySelectorAll('input[name=fixedDays]:checked')].map(x=>Number(x.value));let fixed=fixedDays.length?[{active:true,days:fixedDays,time:v.fixedTime,duration:Number(v.fixedDuration||1)}]:[];if(id && id!=='0'){let x=data.students.find(a=>a.id==id);if(!x){alert('No se encontró el alumno para editar.');return}Object.assign(x,{name:v.name,age:Number(v.age),level:v.level,tariff:v.tariff,price,notes:v.notes,fixedSchedule:fixed})}else data.students.push({id:newUuid(),name:v.name,age:Number(v.age),level:v.level,tariff:v.tariff,price,paid:false,hits:{},rainHours:0,recoveredHours:0,fixedSchedule:fixed,notes:v.notes});renderAll();const result=await syncToSupabase();if(!result.ok){alert('No se pudo guardar en Supabase: '+(result.error?.message||result.error||'error desconocido'));return}closeModal();localStorage.setItem(KEY,JSON.stringify(data));}
+async function deleteStudent(id){const x=data.students.find(a=>String(a.id)===String(id));if(!x)return;if(!confirm(`¿Eliminar a ${x.name}?\n\nSe eliminarán también sus clases, pagos, horarios y recuperaciones.`))return;try{if(googleCalendarId){try{await deleteGoogleEventsForStudent(x.name)}catch(e){console.warn('No se pudieron borrar los eventos de Google Calendar:',e)}}const sid=x.id;const [aRes,pRes,hRes,cRes]=await Promise.all([supabaseClient.from('alumnos').delete().eq('id',sid),supabaseClient.from('pagos').delete().eq('alumno_id',sid),supabaseClient.from('horarios_fijos').delete().eq('alumno_id',sid),supabaseClient.from('clases').delete().eq('alumno_id',sid)]);for(const r of [aRes,pRes,hRes,cRes])if(r.error)throw r.error;data.students=data.students.filter(a=>String(a.id)!==String(id));data.classes=data.classes.filter(c=>c.student!==x.name);data.payments=data.payments.filter(p=>p.student!==x.name);data.rain=data.rain.filter(r=>r.student!==x.name);window.openStudentCards?.delete(String(id));localStorage.setItem(KEY,JSON.stringify(data));renderAll();if(googleCalendarId){try{await syncAllToGoogle(true)}catch(e){console.warn('Google Calendar cleanup after delete:',e)}}}catch(err){alert('No se pudo eliminar el alumno: '+(err.message||err));}}
+function editStudent(id){openModal('student',id)}
+async function deleteActivity(id){const a=(data.activities||[]).find(x=>String(x.id)===String(id));if(!a)return;if(!confirm('¿Eliminar esta Escuelita?\n\nSe eliminarán también sus próximas fechas del Google Calendar.'))return;try{if(googleCalendarId){let map={};try{map=JSON.parse(await getConfig('google_activity_event_ids')||'{}')}catch{};for(const [k,eventId] of Object.entries(map)){if(String(k).startsWith(String(id)+'|')){try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(eventId)}`,{method:'DELETE'})}catch(e){if(!['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))throw e}delete map[k]}}await setConfig('google_activity_event_ids',JSON.stringify(map));}data.activities=data.activities.filter(x=>String(x.id)!==String(id));await save();}catch(err){alert('No se pudo eliminar la Escuelita: '+(err.message||err));}}
+async function saveActivity(e,id){e.preventDefault();let v=vals(e.target),a=id?(data.activities||[]).find(x=>String(x.id)===String(id)):null;if(!a){a={id:newUuid(),name:v.name,days:[],time:v.time,duration:Number(v.duration||1),amount:Number(v.amount||0),occurrences:{}};data.activities.push(a);}a.name='Escuelita';a.days=[...e.target.querySelectorAll('input[name=days]:checked')].map(x=>Number(x.value));a.time=v.time;a.duration=Number(v.duration||1);a.amount=Number(v.amount||0);a.occurrences=a.occurrences||{};normalizeActivities();closeModal();await save();}
+async function activityNeeded(activityId,date){let a=(data.activities||[]).find(x=>String(x.id)===String(activityId));if(!a)return;let occ=a.occurrences[date]||{};occ.status='needed';occ.amount=Number(occ.amount??a.amount??0);occ.paid=false;a.occurrences[date]=occ;renderMoney();await save();if(googleCalendarId){try{await syncActivitiesToGoogle()}catch(e){console.warn('Google Calendar Escuelita:',e)}}}
+async function activityNotNeeded(activityId,date){let a=(data.activities||[]).find(x=>String(x.id)===String(activityId));if(!a)return;let occ=a.occurrences[date]||{};occ.status='not_required';occ.paid=false;a.occurrences[date]=occ;renderMoney();await save();if(googleCalendarId){try{await syncActivitiesToGoogle()}catch(e){console.warn('Google Calendar Escuelita:',e)}}}
+async function activityPaid(activityId,date){let a=(data.activities||[]).find(x=>String(x.id)===String(activityId));if(!a)return;let occ=a.occurrences[date]||{};if(occ.status!=='needed'){alert('Primero marcá “Me necesitaron”.');return}let amount=prompt(`Importe de ${a.name} — ${date.split('-').reverse().join('/')}`,String(occ.amount??a.amount??0));if(amount===null)return;amount=Number(amount)||0;occ.status='paid';occ.amount=amount;occ.paid=true;a.occurrences[date]=occ;data.payments=data.payments.filter(p=>!(p.type==='activity'&&String(p.activityId)===String(activityId)&&p.date===date));data.payments.push({id:newUuid(),student:a.name,amount,type:'activity',activityId,date});renderMoney();await save();}
+async function syncActivitiesToGoogle(){
+  if(!googleCalendarId)return;
+  normalizeActivities();
+  const key='google_activity_event_ids';
+  let oldMap={};
+  try{oldMap=JSON.parse(await getConfig(key)||'{}')}catch{}
+  const existingByKey={};
+  const existingIds=new Set();
+  let pageToken='';
+  do{
+    const q=`calendars/${encodeURIComponent(googleCalendarId)}/events?singleEvents=false&showDeleted=false&maxResults=250&privateExtendedProperty=${encodeURIComponent('kind=activity')}${pageToken?'&pageToken='+encodeURIComponent(pageToken):''}`;
+    const page=await googleApi(q,{method:'GET'});
+    for(const ev of (page.items||[])){
+      const p=ev.extendedProperties?.private||{};
+      if(p.kind!=='activity')continue;
+      existingIds.add(ev.id);
+      const aid=String(p.activity_id||'');
+      const date=String(p.activity_date||ev.start?.dateTime?.slice(0,10)||'');
+      if(aid&&date)existingByKey[`${aid}|${date}`]=ev.id;
+    }
+    pageToken=page.nextPageToken||'';
+  }while(pageToken);
+
+  const wanted=new Set();
+  const newMap={};
+  const allOccurrences=activityUpcoming(120,true);
+  for(const o of allOccurrences){
+    const occKey=`${o.activityId}|${o.date}`;
+    const occ=(data.activities.find(a=>String(a.id)===String(o.activityId))?.occurrences||{})[o.date]||{};
+    const existingId=existingByKey[occKey]||oldMap[occKey]||null;
+    if(occ.status==='not_required'){
+      if(existingId){
+        try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(existingId)}`,{method:'DELETE'})}
+        catch(e){if(!['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))throw e}
+      }
+      delete oldMap[occKey];
+      continue;
+    }
+    const dt=googleDateTime(o.date,o.time,o.duration);
+    const body={summary:'Escuelita',description:o.status==='Me pagaron'?`Escuelita pagada · ${money(o.amount)}`:(o.status==='Me necesitaron'?`Escuelita confirmada · ${money(o.amount)}`:'Escuelita a confirmar'),start:{dateTime:dt.start,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},end:{dateTime:dt.end,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},extendedProperties:{private:{mis_clases:'1',kind:'activity',activity_id:String(o.activityId),activity_date:o.date,status:o.status}}};
+    let id=existingId;
+    if(id){
+      try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(id)}`,{method:'PUT',body:JSON.stringify(body)})}
+      catch(e){if(['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))id=null;else throw e}
+    }
+    if(!id){const ev=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events`,{method:'POST',body:JSON.stringify(body)});id=ev.id;}
+    newMap[occKey]=id;wanted.add(id);
+  }
+  for(const id of existingIds){
+    if(wanted.has(id))continue;
+    try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(id)}`,{method:'DELETE'})}
+    catch(e){if(!['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))throw e}
+  }
+  await setConfig(key,JSON.stringify(newMap));
+}
+
+function toggleEscuelitaFields(type){const box=document.getElementById('escuelitaFields'),normal=document.getElementById('normalClassFields');if(!box)return;const on=type==='Escuelita';box.style.display=on?'block':'none';if(normal)normal.style.display=on?'none':'block';const date=normal?.querySelector('[name=date]');if(date)date.required=!on} async function saveClass(e){e.preventDefault();let v=vals(e.target);data.classes.push({id:Date.now(),student:v.student,date:v.date,time:v.time,duration:Number(v.duration),status:v.type||'Clase suelta',classType:v.type==='Clase grupal'?'group':'individual',note:v.note});closeModal();await save()}
+async function saveRainStudent(e,id){e.preventDefault();let v=vals(e.target),x=data.students.find(a=>a.id==id),h=Number(v.hours||0);if(!x)return;if(v.action==='rain'){const selectedId=v.classToSuspend;const isFixed=String(selectedId||'').startsWith('fixed-');const original=isFixed?null:(selectedId?data.classes.find(c=>String(c.id)===String(selectedId)):null);let occDate=v.date,occTime='';if(isFixed){const parts=String(selectedId).split('-');occDate=parts.slice(-3).join('-');const f=x.fixedSchedule||{};occTime=f.time||'';}else if(original){occDate=original.date;occTime=original.time||'';}x.rainHours=Number(x.rainHours||0)+h;const rainId=newUuid();data.rain.push({id:rainId,student:x.name,date:occDate,hours:h,note:v.note||'Suspensión por lluvia',recoveryId:null,originalClassId:original?.id||null,fixedOccurrenceId:isFixed?selectedId:null,fixedStudentId:isFixed?String(x.id):null,fixedTime:isFixed?occTime:null});if(original){original.status='Lluvia';original.note=(original.note?original.note+' · ':'')+'Suspendida por lluvia';original.rainSuspensionId=rainId;}}else{x.recoveredHours=Math.min(Number(x.rainHours||0),Number(x.recoveredHours||0)+h);data.classes.push({id:newUuid(),student:x.name,date:v.date,time:v.time||'',duration:h,status:'Recuperación',classType:x.tariff==='group'?'group':'individual',note:v.note||'Recuperación'});}closeModal();await save()}
+function togglePaid(id){const x=data.students.find(a=>a.id==id);if(!x)return;x.paid=!x.paid;if(x.paid){const existing=data.payments.some(p=>p.student===x.name&&Number(p.amount)===Number(x.price)&&p.type===x.tariff);if(!existing){data.payments.push({id:Date.now(),student:x.name,amount:Number(x.price),type:x.tariff||'individual',date:new Date().toISOString().slice(0,10)});}}else{const idx=[...data.payments].map((p,i)=>[p,i]).reverse().find(([p])=>p.student===x.name&&Number(p.amount)===Number(x.price));if(idx)data.payments.splice(idx[1],1);}save()}function savePayment(e){e.preventDefault();let v=vals(e.target);data.payments.push({id:Date.now(),student:v.student,amount:Number(v.amount),type:v.type,date:v.date});let x=data.students.find(a=>a.name===v.student);if(x)x.paid=true;closeModal();save()}function suggestAmount(){let t=document.getElementById('ptype')?.value;if(document.getElementById('pamount'))document.getElementById('pamount').value=data.rates[t==='class'?'class':t==='group'?'group':'individual']}function saveRates(e){e.preventDefault();let v=vals(e.target);data.rates={class:Number(v.class),individual:Number(v.individual),group:Number(v.group)};closeModal();save()}function savePlan(e,id){e.preventDefault();const v=vals(e.target);if(id){const p=data.plans.find(x=>String(x.id)===String(id));if(p)Object.assign(p,v)}else data.plans.push({id:Date.now(),...v});closeModal();save()}function deletePlan(id){data.plans=data.plans.filter(x=>x.id!=id);save()}function setTheme(v){document.body.classList.toggle('dark',v==='dark');localStorage.setItem('mcTheme',v)}function setFont(v){document.body.classList.remove('font-system','font-inter','font-segoe','font-avenir','font-georgia');document.body.classList.add('font-'+v);localStorage.setItem('mcFont',v)}function loadAppearance(){setTheme(localStorage.getItem('mcTheme')||'light');setFont(localStorage.getItem('mcFont')||'system')}function resetData(){if(confirm('¿Restaurar datos de ejemplo?')){localStorage.removeItem(KEY);location.reload()}}loadAppearance();document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+const authGate=document.getElementById('authGate'),authForm=document.getElementById('authForm'),authError=document.getElementById('authError'),authLoading=document.getElementById('authLoading');
+function showAuthError(msg){authError.textContent=msg;authError.style.display='block'}
+function hideAuthError(){authError.textContent='';authError.style.display='none'}
+let currentSession=null;
+async function loadFromSupabase(){
+  if(!currentSession) return false;
+  try{
+    // Keep the current local cache available in case this is the first device
+    // connecting after the data was created locally.
+    const localSnapshot=JSON.parse(localStorage.getItem(KEY)||"null");
+    const [aRes,hRes,cRes,pRes,plRes,tRes,cfgRes]=await Promise.all([
+      supabaseClient.from('alumnos').select('*').order('created_at'),
+      supabaseClient.from('horarios_fijos').select('*'),
+      supabaseClient.from('clases').select('*').order('fecha').order('hora'),
+      supabaseClient.from('pagos').select('*').order('fecha'),
+      supabaseClient.from('planes').select('*').order('created_at'),
+      supabaseClient.from('tarifas').select('*').eq('activa',true),
+      supabaseClient.from('configuracion').select('clave,valor').in('clave',['actividades_recurrentes'])
+    ]);
+    for(const r of [aRes,hRes,cRes,pRes,plRes,tRes,cfgRes]) if(r.error) throw r.error;
+
+    // If Supabase is genuinely empty but this device has local data, migrate it once.
+    // This is important for the first PC->Supabase transition.
+    const remoteStudents=aRes.data||[];
+    const remoteHasData=remoteStudents.length || (cRes.data||[]).length || (pRes.data||[]).length || (plRes.data||[]).length || (tRes.data||[]).length;
+    if(!remoteHasData && localSnapshot && Array.isArray(localSnapshot.students) && localSnapshot.students.length){
+      const previous=data;
+      data=localSnapshot;
+      const migrated=await syncToSupabase();
+      if(migrated.ok){
+        return await loadFromSupabase();
+      }
+      data=previous;
+      throw migrated.error||new Error('No se pudo migrar la información local a Supabase');
+    }
+    const remotePayments=(pRes.data||[]).filter(p=>p.estado==='pagado');
+    const nameById={};
+    remoteStudents.forEach(st=>nameById[st.id]=st.nombre);
+
+    data.students=remoteStudents.map(st=>{
+      const fs=(hRes.data||[]).filter(h=>h.alumno_id===st.id&&h.activo);
+      const groups={};fs.forEach(h=>{const key=String(h.hora).slice(0,5)+'|'+Number(h.duracion_minutos||60);(groups[key]??={active:true,days:[],time:String(h.hora).slice(0,5),duration:Number(h.duracion_minutos||60)/60}).days.push(Number(h.dia_semana));});
+      return {
+        id:st.id,name:st.nombre,age:st.edad||'',level:st.nivel||'',notes:st.notas||'',
+        tariff:st.tarifa_tipo||'individual',price:Number(st.precio||0)||data.rates.individual,
+        paid:!!st.pagado,hits:st.golpes||{},rainHours:Number(st.lluvia_horas||0),
+        recoveredHours:Number(st.recuperadas_horas||0),
+        fixedSchedule:Object.values(groups)
+      };
+    });
+
+    // Payments are authoritative too; if a payment exists for an active student, reflect it.
+    const paidByStudent={};
+    remotePayments.forEach(p=>{paidByStudent[p.alumno_id]=true;});
+    data.students.forEach(st=>{ if(paidByStudent[st.id]) st.paid=true; });
+
+    data.classes=(cRes.data||[]).map(c=>({
+      id:c.id,student:nameById[c.alumno_id]||'',date:c.fecha,time:String(c.hora||'').slice(0,5),
+      duration:Number(c.duracion_minutos||60)/60,
+      status:c.tipo==='recuperacion'?'Recuperación':(c.estado==='suspendida'?'Lluvia':'Clase suelta'),note:c.notas||''
+    }));
+    data.rain=(cRes.data||[]).filter(c=>c.estado==='suspendida').map(c=>({
+      id:c.id,student:nameById[c.alumno_id]||'',date:c.fecha,hours:Number(c.duracion_minutos||60)/60,note:c.notas||'',recoveryId:null
+    }));
+    const activityConfig=(cfgRes.data||[]).find(x=>x.clave==='actividades_recurrentes');
+    if(activityConfig?.valor){try{data.activities=JSON.parse(activityConfig.valor)||[]}catch{data.activities=[]}}
+    else if(!Array.isArray(data.activities)) data.activities=[];
+    normalizeActivities();
+    const remoteRates=tRes.data||[];
+    for(const r of remoteRates){
+      if(r.tipo==='por_clase') data.rates.class=Number(r.precio||0);
+      if(r.tipo==='mensual_individual') data.rates.individual=Number(r.precio||0);
+      if(r.tipo==='mensual_grupal') data.rates.group=Number(r.precio||0);
+    }
+    data.payments=remotePayments.map(p=>({id:p.id,student:nameById[p.alumno_id]||'',amount:Number(p.monto||0),type:p.concepto||'individual',date:p.fecha}));
+    data.plans=(plRes.data||[]).map(p=>{const parts=(p.notas||'').split(/\n\n/);return {id:p.id,title:p.nombre,game:parts[0]||'',conditioned:parts[1]||'',task:parts[2]||'',regulated:parts[3]||'',situation:p.situacion||'',tactical:p.objetivo_tactico||'',technical:p.herramienta_tecnica||'',control:p.elemento_control||'',bio:p.principio_biomecanico||'',student:p.descripcion||''};});
+    data.rain=[];
+    localStorage.setItem(KEY,JSON.stringify(data));
+    return true;
+  }catch(err){
+    console.error('Supabase load error:',err);
+    showAuthError('No se pudieron cargar los datos: '+(err.message||err));
+    return false;
+  }
+}
+let appEntered=false; async function enterApp(){if(appEntered)return;appEntered=true;authGate.style.display='none';await loadFromSupabase();await initGoogleCalendar();renderAll();try{const handled=await handleGoogleOAuthCallback();if(handled)alert('Google Calendar conectado. Tus clases se sincronizarán automáticamente.')}catch(e){console.error('Google OAuth callback:',e);alert('No se pudo conectar Google Calendar: '+(e.message||e));window.history.replaceState({},document.title,window.location.pathname)}}
+async function initAuth(){authLoading.style.display='block';try{const {data:{session}}=await supabaseClient.auth.getSession();currentSession=session;if(session){await enterApp()}else{authGate.style.display='flex'}}catch(err){showAuthError('No se pudo comprobar la sesión: '+(err.message||err));authGate.style.display='flex'}finally{authLoading.style.display='none'}}
+authForm.addEventListener('submit',async e=>{e.preventDefault();hideAuthError();authLoading.textContent='Iniciando sesión…';authLoading.style.display='block';const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});authLoading.style.display='none';if(error){showAuthError(error.message.includes('Email not confirmed')?'El email todavía no está confirmado en Supabase.':error.message);return}if(data.session)enterApp()});
+supabaseClient.auth.onAuthStateChange((event,session)=>{currentSession=session;if(session && event==='SIGNED_IN')enterApp()});
+initAuth();
+</script></body></html>
