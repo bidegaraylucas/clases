@@ -385,7 +385,7 @@ function openStudentGroup(ids){
  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
  renderStudentGroupDetail();
 }
-function openStudentDetail(id){window.currentStudentDetailId=String(id);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('studentDetail').classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));renderStudentDetail();}
+function openStudentDetail(id){window.currentStudentGroupIds=null;window.currentStudentDetailId=String(id);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('studentDetail').classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));renderStudentDetail();}
 function backToStudents(){window.currentStudentDetailId=null;window.currentStudentGroupIds=null;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('students').classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelector('.nav button:nth-child(2)')?.classList.add('active');renderAll();}
 function renderStudentGroupDetail(){
  const ids=window.currentStudentGroupIds||[],members=data.students.filter(x=>ids.includes(String(x.id)));
