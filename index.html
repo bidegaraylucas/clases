@@ -223,35 +223,41 @@ function normalizeRainRecoveries(student){
   r.recoveredHours=Number(r.recoveredHours||0)+used;legacy-=used;
  }
 }
+function groupRainDebtRows(members){
+ if(!members?.length)return [];
+ const sorted=members.slice().sort((a,b)=>a.name.localeCompare(b.name,'es')),primary=sorted[0];
+ const names=new Set(members.map(x=>String(x.name))),ids=new Set(members.map(x=>String(x.id))),grouped=new Map();
+ for(const record of data.rain||[]){
+  if(!names.has(String(record.student||''))&&!ids.has(String(record.studentId||record.fixedStudentId||'')))continue;
+  const time=String(record.fixedTime||record.time||'').slice(0,5),hours=Number(record.hours||0),recovered=Number(record.recoveredHours||0);
+  const key=record.date&&time?`${record.date}|${time}|${hours}`:`record|${record.id||Math.random()}`;
+  if(!grouped.has(key))grouped.set(key,[]);
+  grouped.get(key).push({record,remaining:Math.max(0,hours-recovered)});
+ }
+ return [...grouped.values()].map(entries=>{
+  const main=entries.find(x=>String(x.record.student||'')===String(primary.name))||entries[0];
+  return {id:main.record.id||('rain-'+primary.id+'-'+entries[0].record.date),recordId:main.record.id||null,date:main.record.date||'',time:main.record.fixedTime||main.record.time||'',hours:Math.max(0,...entries.map(x=>x.remaining)),source:main.record,groupMembers:members,groupRows:entries};
+ }).filter(x=>x.hours>0).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.time).localeCompare(String(b.time)));
+}
+function groupPendingHours(members){
+ if(!members?.length)return 0;
+ const rainRecords=(data.rain||[]).filter(r=>members.some(x=>String(r.student||'')===String(x.name)||String(r.studentId||r.fixedStudentId||'')===String(x.id)));
+ if(rainRecords.length)return groupRainDebtRows(members).reduce((sum,row)=>sum+Number(row.hours||0),0);
+ return Math.max(0,...members.map(pendingHours));
+}
 function pendingDebtEntries(){
  const seen=new Set(),entries=[];
  for(const student of data.students){
   if(seen.has(String(student.id)))continue;
   const members=studentGroupMembers(student).slice().sort((a,b)=>a.name.localeCompare(b.name,'es'));
   members.forEach(x=>seen.add(String(x.id)));
-  const pending=Math.max(0,...members.map(pendingHours));
-  if(pending<=0)continue;
-  const primary=members.find(x=>pendingHours(x)===pending)||members[0];
-  entries.push({members,primary,hours:pending,label:members.length>1?studentGroupLabel(members):student.name,group:members.length>1});
+  const group=members.length>1;
+  const hours=group?groupPendingHours(members):pendingHours(student);
+  if(hours<=0)continue;
+  const primary=members.find(x=>pendingHours(x)>0)||members[0];
+  entries.push({members,primary,hours,label:group?studentGroupLabel(members):student.name,group});
  }
  return entries;
-}
-function groupRainDebtRows(members){
- if(!members?.length)return [];
- const primary=members.slice().sort((a,b)=>a.name.localeCompare(b.name,'es'))[0];
- const primaryRows=rainDebtRows(primary),allRows=members.map(member=>({member,rows:rainDebtRows(member)}));
- const keyed=new Map();
- for(const {member,rows} of allRows)for(const row of rows){
-  const key=row.date&&row.time?`${row.date}|${row.time}|${Number(row.source?.hours||row.hours)}`:`unmatched|${member.id}|${row.id}`;
-  if(!keyed.has(key))keyed.set(key,[]);
-  keyed.get(key).push({member,row});
- }
- return [...keyed.values()].map(entries=>{
-  const main=entries.find(x=>String(x.member.id)===String(primary.id))||entries[0];
-  const hours=Math.max(...entries.map(x=>Number(x.row.hours||0)));
-  const primaryMatch=primaryRows.find(x=>String(x.id)===String(main.row.id))||main.row;
-  return {...primaryMatch,hours,groupMembers:members,groupRows:entries};
- }).filter(x=>x.hours>0).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.time).localeCompare(String(b.time)));
 }
 function openRainDebtOverview(studentId){
  const modal=document.getElementById('modal'),sheet=document.getElementById('sheet');
@@ -301,8 +307,8 @@ async function saveRainRecovery(e){
  if(!item||hours<=0||hours>item.hours){alert('Las horas recuperadas deben ser menores o iguales a las pendientes de esta suspensión.');return}
  if(group){
   for(const member of members){
-   const match=rainDebtRows(member).find(row=>row.date===item.date&&row.time===item.time&&row.hours>=hours);
-   if(match){applyRainRecovery(member,match.id,hours);member.recoveredHours=Number(member.recoveredHours||0)+hours}
+   const record=(data.rain||[]).find(r=>(String(r.student||'')===String(member.name)||String(r.studentId||r.fixedStudentId||'')===String(member.id))&&String(r.date||'')===String(item.date||'')&&String(r.fixedTime||r.time||'').slice(0,5)===String(item.time||'').slice(0,5)&&Number(r.hours||0)-Number(r.recoveredHours||0)>=hours);
+   if(record){applyRainRecovery(member,record.id,hours);member.recoveredHours=Number(member.recoveredHours||0)+hours}
   }
  }else{
   applyRainRecovery(student,v.rainId,hours);student.recoveredHours=Number(student.recoveredHours||0)+hours;
