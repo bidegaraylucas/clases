@@ -566,7 +566,7 @@ function calendarClassForOccurrence(c){
   const clickable=c.kind!=='activity';
   const isRain=c.status==='Lluvia';
   const label=c.grouped&&Array.isArray(c.groupMembers)?c.groupMembers.join(' + '):(c.kind==='activity'?'Escuelita':(c.student||c.name||'Clase'));
-  return `<span class="event ${c.status==='Recuperación'?'recovery':''} ${isRain?'rain':''} ${c.status==='Cancelada'?'cancelled':''}" ${clickable?`onclick="openCalendarClassAction('${id}');event.stopPropagation()"`:''}>${isRain?'🌧️ ':''}${c.time?c.time+' ':''}${label}${c.kind==='activity'?'':' · '+c.status}</span>`;
+  return `<span class="event ${c.status==='Recuperación'?'recovery':''} ${isRain?'rain':''} ${c.status==='Cancelada'?'cancelled':''}" ${clickable?`onclick="openCalendarClassAction('${id}');event.stopPropagation()"`:''}>${isRain?'🌧️ ':c.status==='Recuperación'?'🔁 ':''}${c.time?c.time+' ':''}${label}${c.kind==='activity'?'':' · '+c.status}</span>`;
 }
 function openCalendarClassAction(id){
   const y=viewDate.getFullYear(),m=viewDate.getMonth();
@@ -875,7 +875,7 @@ async function syncClassToGoogle(c){
   const groupLabel=String(c.note||'').match(/^\[Grupo:([^\]]+)\]/)?.[1]||'';
   const displayStudent=groupLabel||c.student;
   const isGroup=(c.classType==='group'||c.grouped===true||c.grouped==='1'||c.status==='Clase grupal'||(c.status==='Recuperación'&&studentObj?.tariff==='group')||!!groupLabel);
-  const ordinaryTitle=(c.status==='Recuperación'?'R - ':'')+displayStudent;
+  const ordinaryTitle=(c.status==='Recuperación'?'🔁 R - ':'')+displayStudent;
   const title=status?googleStatusTitle(displayStudent,displayStudent,status):ordinaryTitle;
   const eventNote=String(c.note||'').replace(/^\[Grupo:[^\]]+\]\s*/,'');
   const dt=googleDateTime(c.date,c.time,c.duration);
@@ -1261,7 +1261,7 @@ async function initGoogleCalendar(){
     googleCalendarId=await getConfig('google_calendar_id');
     const connected=await refreshPersistentGoogleToken();
     if(connected){
-      try{await ensureGoogleCalendar();await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
+      try{await ensureGoogleCalendar();for(const c of data.classes.filter(c=>c.status==='Recuperación'&&c.date>=localDateKey()))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
       catch(e){console.warn('Google Calendar duplicate reconciliation:',e.message)}
     }
     updateGoogleStatus();
