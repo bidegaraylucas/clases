@@ -1200,7 +1200,7 @@ async function initGoogleCalendar(){
     googleCalendarId=await getConfig('google_calendar_id');
     const connected=await refreshPersistentGoogleToken();
     if(connected){
-      try{await ensureGoogleCalendar();await syncFixedSchedulesToGoogle();await syncActivitiesToGoogle()}
+      try{await ensureGoogleCalendar();await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
       catch(e){console.warn('Google Calendar duplicate reconciliation:',e.message)}
     }
     updateGoogleStatus();
