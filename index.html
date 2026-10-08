@@ -919,16 +919,20 @@ async function syncFixedSuspensionsToGoogle(){
   const privateProps={mis_clases:'1',kind:'fixed_instance',student:names.join(' + '),fixed_occurrence_id:primary.fixedOccurrenceId,fixed_status:status,status_student:names.join(' + ')};
   const ids=[...new Set(items.map(x=>x.googleEventId).filter(Boolean))];
   let eventId=ids[0]||null,occurrence=null;
-  if(!eventId&&seriesId){
+  if(seriesId){
    const startLocal=new Date(group.date+'T00:00:00'),endLocal=new Date(startLocal.getTime()+86400000);
    const params='singleEvents=true&showDeleted=false&timeMin='+encodeURIComponent(startLocal.toISOString())+'&timeMax='+encodeURIComponent(endLocal.toISOString())+'&maxResults=20';
-   const result=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(seriesId)+'/instances?'+params);
-   occurrence=(result.items||[]).find(ev=>String(ev.originalStartTime?.dateTime||ev.start?.dateTime||'').slice(0,10)===group.date);
+   try{
+    const result=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(seriesId)+'/instances?'+params);
+    occurrence=(result.items||[]).find(ev=>String(ev.originalStartTime?.dateTime||ev.start?.dateTime||'').slice(0,10)===group.date);
+   }catch(e){if(!isGoogleMissingResource(e))throw e}
    if(occurrence){
     const pp=occurrence.extendedProperties?.private||{};
     const hasOverride=!!pp.fixed_occurrence_id||occurrence.summary!==baseSummary||occurrence.description!=='Horario fijo de Mis Clases';
     if(status==='normal'&&!hasOverride){
+     for(const id of ids){try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(id),{method:'DELETE'})}catch(e){if(!isGoogleMissingResource(e))throw e}}
      items.forEach(item=>item.googleEventId=null);
+     changed=true;
      continue;
     }
     eventId=occurrence.id;
