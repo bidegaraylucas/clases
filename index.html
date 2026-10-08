@@ -648,17 +648,60 @@ async function clearGoogleCalendarIfRequested(){
   }
 }
 async function ensureGoogleCalendar(){
-  const makeCalendar=async()=>{const cal=await googleApi('calendars',{method:'POST',body:JSON.stringify({summary:'Clases',description:'Calendario de clases de Mis Clases'})});googleCalendarId=cal.id;await setConfig('google_calendar_id',googleCalendarId);return googleCalendarId};
   if(!googleCalendarId){const stored=await getConfig('google_calendar_id');if(stored)googleCalendarId=stored;}
+  let storedCalendar=null;
   if(googleCalendarId){
-    try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}`);return googleCalendarId}
+    try{storedCalendar=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}`)}
     catch(e){
-      const msg=String(e.message||e).toLowerCase();
-      if(msg.includes('resource has been deleted')||msg.includes('not found')||msg.includes('404')||msg.includes('410')){googleCalendarId=null;await setConfig('google_calendar_id','');return await makeCalendar();}
-      throw e;
+      if(!isGoogleMissingResource(e))throw e;
+      googleCalendarId=null;
     }
   }
-  return await makeCalendar();
+  let calendars=[],pageToken='';
+  do{
+    const path='users/me/calendarList?maxResults=250'+(pageToken?'&pageToken='+encodeURIComponent(pageToken):'');
+    const page=await googleApi(path);
+    calendars.push(...(page.items||[]).filter(c=>String(c.summary||'').trim().toLowerCase()==='clases'));
+    pageToken=page.nextPageToken||'';
+  }while(pageToken);
+  const makeCalendar=async()=>{const cal=await googleApi('calendars',{method:'POST',body:JSON.stringify({summary:'Clases',description:'Calendario de clases de Mis Clases'})});googleCalendarId=cal.id;await setConfig('google_calendar_id',googleCalendarId);return googleCalendarId};
+  if(!calendars.length){
+    if(storedCalendar){googleCalendarId=storedCalendar.id;await setConfig('google_calendar_id',googleCalendarId);return googleCalendarId}
+    return await makeCalendar();
+  }
+  const keep=calendars.find(c=>String(c.id)===String(googleCalendarId))||calendars[0];
+  googleCalendarId=keep.id;
+  await setConfig('google_calendar_id',googleCalendarId);
+  const duplicates=calendars.filter(c=>String(c.id)!==String(keep.id));
+  if(!duplicates.length)return googleCalendarId;
+  if(!confirm(`Encontré ${calendars.length} calendarios “Clases”. ¿Querés reunir sus eventos en uno solo y eliminar los calendarios duplicados?`))return googleCalendarId;
+  const signature=ev=>JSON.stringify([ev.summary||'',ev.start?.dateTime||ev.start?.date||'',ev.end?.dateTime||ev.end?.date||'',ev.description||'']);
+  const known=new Set();
+  const readEvents=async calendarId=>{
+    let token='',events=[];
+    do{
+      const path=`calendars/${encodeURIComponent(calendarId)}/events?singleEvents=false&showDeleted=false&maxResults=250${token?'&pageToken='+encodeURIComponent(token):''}`;
+      const page=await googleApi(path);
+      events.push(...(page.items||[]));
+      token=page.nextPageToken||'';
+    }while(token);
+    return events;
+  };
+  for(const ev of await readEvents(keep.id))known.add(signature(ev));
+  for(const duplicate of duplicates){
+    for(const ev of await readEvents(duplicate.id)){
+      if(!ev.id||ev.status==='cancelled')continue;
+      const sig=signature(ev);
+      if(!known.has(sig)){
+        const body={};
+        for(const field of ['summary','description','location','start','end','recurrence','reminders','visibility','transparency','extendedProperties','attendees','colorId'])if(ev[field]!==undefined)body[field]=ev[field];
+        await googleApi(`calendars/${encodeURIComponent(keep.id)}/events`,{method:'POST',body:JSON.stringify(body)});
+        known.add(sig);
+      }
+    }
+    await googleApi(`calendars/${encodeURIComponent(duplicate.id)}`,{method:'DELETE'});
+  }
+  return googleCalendarId;
 }
 function googleDateTime(date,time,durationHours){const start=new Date(`${date}T${(time||'00:00').slice(0,5)}:00`);const end=new Date(start.getTime()+Number(durationHours||1)*3600000);const iso=d=>{const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}:00`};return {start:iso(start),end:iso(end)} }
 function googleStatusTitle(summary,student,status){
@@ -976,10 +1019,10 @@ async function handleGoogleOAuthCallback(){
   googleToken=data.access_token||null;googleConnectionError=false;
   if(data.calendar_id)googleCalendarId=data.calendar_id;
   window.history.replaceState({},document.title,window.location.pathname);
-  // Primera conexión/reconexión: limpiar todos los calendarios “Clases” viejos y duplicados.
-  const reset=await resetGoogleCalendars();
+  // Reutiliza el calendario existente; no borres datos al reconectar.
+  googleCalendarId=null;
   await syncAllToGoogle();
-  alert(`Google Calendar reiniciado. ${Number(reset.deletedCalendars||0)} calendario(s) “Clases” eliminado(s) y ${Number(reset.deletedEvents||0)} evento(s) borrado(s). Se creó un único calendario “Clases” limpio.`);
+  alert('Google Calendar conectado y sincronizado.');
   updateGoogleStatus();
   return true;
 }
@@ -1065,8 +1108,10 @@ async function syncActivitiesToGoogle(){
       const date=String(p.activity_date||ev.start?.dateTime?.slice(0,10)||'');
       if(aid&&date){
         const k=`${aid}|${date}`;
-        existingByKey[k]=ev;
-        existingIdsByKey[k]=ev.id;
+        if(!existingByKey[k])existingByKey[k]=[];
+        existingByKey[k].push(ev);
+        if(!existingIdsByKey[k])existingIdsByKey[k]=[];
+        existingIdsByKey[k].push(ev.id);
       }
     }
     pageToken=page.nextPageToken||'';
@@ -1082,7 +1127,9 @@ async function syncActivitiesToGoogle(){
     const occKey=`${o.activityId}|${o.date}`;
     managedKeys.add(occKey);
     const occ=(data.activities.find(a=>String(a.id)===String(o.activityId))?.occurrences||{})[o.date]||{};
-    const existingEvent=existingByKey[occKey]||null;const existingId=existingEvent?.id||oldMap[occKey]||null;
+    const candidates=existingByKey[occKey]||[];
+    const existingEvent=candidates.find(ev=>ev.id===oldMap[occKey])||candidates[0]||null;
+    const existingId=existingEvent?.id||oldMap[occKey]||null;
     if(occ.status==='not_required'){
       if(existingId){
         try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(existingId)}`,{method:'DELETE'})}
@@ -1106,10 +1153,11 @@ async function syncActivitiesToGoogle(){
   // Only clean events belonging to dates in the managed window.
   // Older Escuelita events are historical and must never be deleted by a normal sync.
   for(const occKey of managedKeys){
-    const id=existingIdsByKey[occKey];
-    if(!id || wanted.has(id))continue;
-    try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(id)}`,{method:'DELETE'})}
-    catch(e){if(!isGoogleMissingResource(e))throw e}
+    for(const id of (existingIdsByKey[occKey]||[])){
+      if(!id || wanted.has(id))continue;
+      try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(id)}`,{method:'DELETE'})}
+      catch(e){if(!isGoogleMissingResource(e))throw e}
+    }
   }
   await setConfig(key,JSON.stringify(newMap));
 }
