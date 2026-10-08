@@ -708,6 +708,7 @@ function googleStatusTitle(summary,student,status){
   const prefix=status==='rain'?'☂️':status==='cancel'?'❌':'';
   const raw=String(summary||'').replace(/^(?:☂️|❌)\\s*/u,'');
   const parts=raw.split(' + ').map(x=>x.trim()).filter(Boolean);
+  if(parts.length>1)return prefix?prefix+' '+parts.join(' + '):parts.join(' + ');
   const idx=parts.findIndex(x=>x===String(student||'').trim());
   if(idx>=0)parts[idx]=prefix?prefix+' '+parts[idx]:parts[idx];
   else if(prefix)return prefix+' '+String(student||raw).trim();
@@ -863,10 +864,12 @@ async function syncFixedSchedulesToGoogle(){
         const duration=Number(sch.duration||1);
         const isGroup=st.tariff==='group';
         const groupKey=isGroup
-          ? `group|${selectedDay}|${time}|${duration}|${st.startDate||''}`
+          ? `group|${selectedDay}|${time}|${duration}`
           : `student|${st.id}|${selectedDay}|${time}|${duration}|${st.startDate||''}`;
         if(!groups.has(groupKey))groups.set(groupKey,{day:selectedDay,time,duration,startDate:st.startDate||'',members:[]});
-        const groupMembers=groups.get(groupKey).members;
+        const group=groups.get(groupKey);
+        if(isGroup&&st.startDate&&(!group.startDate||st.startDate<group.startDate))group.startDate=st.startDate;
+        const groupMembers=group.members;
         if(!groupMembers.some(x=>String(x.id)===String(st.id)))groupMembers.push(st);
       }
     }
