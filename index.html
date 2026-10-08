@@ -540,7 +540,7 @@ async function googleApi(path,options={},retryAuth=true,rateRetries=0){
   if(!res.ok){
     if(res.status===401&&retryAuth){googleToken=null;await refreshPersistentGoogleToken();return googleApi(path,options,false,rateRetries)}
     const reasons=(body.error?.errors||[]).map(x=>String(x.reason||'').toLowerCase());
-    const rateLimited=res.status===429||reasons.includes('ratelimitexceeded')||reasons.includes('userratelimitexceeded');
+    const errorMessage=String(body.error?.message||'').toLowerCase();const rateLimited=res.status===429||reasons.includes('ratelimitexceeded')||reasons.includes('userratelimitexceeded')||errorMessage.includes('rate limit');
     if(rateLimited&&rateRetries<4){await new Promise(resolve=>setTimeout(resolve,700*Math.pow(2,rateRetries)));return googleApi(path,options,retryAuth,rateRetries+1)}
     throw new Error(body.error?.message||('Google Calendar error '+res.status))
   }
@@ -551,8 +551,11 @@ async function setConfig(key,value){const {error}=await supabaseClient.from('con
 function updateGoogleStatus(){const el=document.getElementById('googleCalendarStatus'),button=document.getElementById('googleConnectButton');if(!el)return;if(googleConnectionError){el.textContent='No se pudo verificar la conexión. Revisá internet o renovala si persiste.';if(button)button.textContent='Reintentar conexión'}else if(googleToken){el.textContent=googleCalendarId?'Conectado · sincronización automática activa':'Conectado · se sincronizará al crear la primera clase';if(button)button.textContent='Renovar conexión'}else{el.textContent='No conectado · conectalo una vez para activar la sincronización automática';if(button)button.textContent='Conectar Google'}}
 async function syncGoogleFromSettings(){
   if(googleSyncTimer){clearTimeout(googleSyncTimer);googleSyncTimer=null}googleSyncPending=false;
-  try{if(googleSyncInFlight)await googleSyncInFlight;await syncAllToGoogle();alert('Google Calendar sincronizado.')}
+  if(googleSyncInFlight){try{await googleSyncInFlight}catch{}}
+  const job=syncAllToGoogle();googleSyncInFlight=job;
+  try{await job;alert('Google Calendar sincronizado.')}
   catch(e){alert('No se pudo sincronizar Google Calendar: '+(e.message||e))}
+  finally{if(googleSyncInFlight===job)googleSyncInFlight=null;if(googleSyncPending)queueGoogleCalendarSync(1300)}
 }
 async function clearGoogleFromSettings(){
   const ok=confirm('¿Vaciar todo y empezar de cero? Se borrarán del calendario de Google todas las clases y, de la app, todos los alumnos, clases, horarios, pagos, recuperaciones y planes. Esta acción no se puede deshacer.');
