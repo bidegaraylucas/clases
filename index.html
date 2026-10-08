@@ -104,7 +104,7 @@ const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{pers
 const GOOGLE_SCOPE='https://www.googleapis.com/auth/calendar';
 const GOOGLE_REDIRECT_URI='https://bidegaraylucas.github.io/clases/';
 const GOOGLE_TOKEN_FUNCTION=SUPABASE_URL+'/functions/v1/google-calendar-token';
-let googleToken=null; let googleCalendarId=null;
+let googleToken=null; let googleCalendarId=null; let googleConnectionError=false;
 const KEY='tennisCoachV04';const monthKey=()=>new Date().toISOString().slice(0,7);const seed={students:[],classes:[],rain:[],cancellations:[],payments:[],rates:{class:12000,individual:90000,group:60000},plans:[],activities:[],fixedOverrides:[]};
 let data=JSON.parse(localStorage.getItem(KEY)||'null')||seed;if(!Array.isArray(data.activities))data.activities=[];if(!Array.isArray(data.cancellations))data.cancellations=[];if(!Array.isArray(data.fixedOverrides))data.fixedOverrides=[];
 data.students.forEach(x=>{if(x.rainHours==null)x.rainHours=0;if(x.recoveredHours==null)x.recoveredHours=0});
@@ -541,7 +541,7 @@ function closeModal(){document.getElementById('modal').classList.remove('show')}
 async function googleApi(path,options={},retry=true){if(!googleToken)await ensureGoogleAccessToken();const headers=Object.assign({'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},options.headers||{});const res=await fetch('https://www.googleapis.com/calendar/v3/'+path,Object.assign({},options,{headers}));const text=await res.text();let body={};try{body=text?JSON.parse(text):{}}catch{}if(!res.ok){if(res.status===401&&retry){googleToken=null;await refreshPersistentGoogleToken();return googleApi(path,options,false)}throw new Error(body.error?.message||('Google Calendar error '+res.status))}return body}
 async function getConfig(key){const {data,error}=await supabaseClient.from('configuracion').select('valor').eq('clave',key).maybeSingle();if(error)throw error;return data?.valor||null}
 async function setConfig(key,value){const {error}=await supabaseClient.from('configuracion').upsert({clave:key,valor:String(value)},{onConflict:'clave'});if(error)throw error}
-function updateGoogleStatus(){const el=document.getElementById('googleCalendarStatus'),button=document.getElementById('googleConnectButton');if(!el)return;if(googleToken){el.textContent=googleCalendarId?'Conectado · sincronización automática activa':'Conectado · se sincronizará al crear la primera clase';if(button)button.textContent='Renovar conexión'}else{el.textContent='No conectado · conectalo una vez para activar la sincronización automática';if(button)button.textContent='Conectar Google'}}
+function updateGoogleStatus(){const el=document.getElementById('googleCalendarStatus'),button=document.getElementById('googleConnectButton');if(!el)return;if(googleConnectionError){el.textContent='No se pudo verificar la conexión. Revisá internet o renovala si persiste.';if(button)button.textContent='Reintentar conexión'}else if(googleToken){el.textContent=googleCalendarId?'Conectado · sincronización automática activa':'Conectado · se sincronizará al crear la primera clase';if(button)button.textContent='Renovar conexión'}else{el.textContent='No conectado · conectalo una vez para activar la sincronización automática';if(button)button.textContent='Conectar Google'}}
 async function syncGoogleFromSettings(){try{await syncAllToGoogle();alert('Google Calendar sincronizado.')}catch(e){alert('No se pudo sincronizar Google Calendar: '+(e.message||e))}}
 async function clearGoogleFromSettings(){try{const r=await resetGoogleCalendars();await ensureGoogleCalendar();alert(`Google Calendar limpiado. ${Number(r.deletedCalendars||0)} calendario(s) viejo(s) y ${Number(r.deletedEvents||0)} evento(s) eliminado(s). Queda un único “Clases” vacío.`);updateGoogleStatus()}catch(e){alert('No se pudo limpiar Google Calendar: '+(e.message||e))}}
 async function clearGoogleCalendarIfRequested(){
@@ -893,6 +893,7 @@ async function googleTokenFunction(body){
 }
 async function refreshPersistentGoogleToken(){
   const data=await googleTokenFunction({action:'refresh'});
+  googleConnectionError=false;
   if(data.connected===false){googleToken=null;return false;}
   googleToken=data.access_token||null;
   if(data.calendar_id) googleCalendarId=data.calendar_id;
@@ -938,7 +939,7 @@ async function handleGoogleOAuthCallback(){
   if(!state||!expected||state!==expected)throw new Error('No se pudo validar la conexión con Google.');
   sessionStorage.removeItem('google_oauth_state');
   const data=await googleTokenFunction({action:'exchange',code,redirect_uri:GOOGLE_REDIRECT_URI});
-  googleToken=data.access_token||null;
+  googleToken=data.access_token||null;googleConnectionError=false;
   if(data.calendar_id)googleCalendarId=data.calendar_id;
   window.history.replaceState({},document.title,window.location.pathname);
   // Primera conexión/reconexión: limpiar todos los calendarios “Clases” viejos y duplicados.
@@ -971,7 +972,7 @@ async function initGoogleCalendar(){
     const connected=await refreshPersistentGoogleToken();
     updateGoogleStatus();
     return connected;
-  }catch(e){console.warn('Google Calendar config:',e.message);googleToken=null;const el=document.getElementById('googleCalendarStatus');if(el)el.textContent='No se pudo comprobar la conexión. Revisá internet o renovala si persiste.';updateGoogleStatus();return false}
+  }catch(e){console.warn('Google Calendar config:',e.message);googleToken=null;googleConnectionError=true;updateGoogleStatus();return false}
 }
 function vals(f){return Object.fromEntries(new FormData(f).entries())}async function setStudentPrice(sel){const p=document.getElementById('studentPrice');if(!p)return;const rate=sel.value==='class'?data.rates.class:sel.value==='group'?data.rates.group:sel.value==='individual'?data.rates.individual:Number(p.value||0);if(sel.value!=='custom')p.value=rate}async function saveStudent(e,id){e.preventDefault();let v=vals(e.target),price=Number(v.price||0),startDate=v.startDate||'';let fixedDays=[...e.target.querySelectorAll('input[name=fixedDays]:checked')].map(x=>Number(x.value));let fixed=fixedDays.length?[{active:true,days:fixedDays,time:v.fixedTime,duration:Number(v.fixedDuration||1)}]:[];if(id && id!=='0'){let x=data.students.find(a=>a.id==id);if(!x){alert('No se encontró el alumno para editar.');return}Object.assign(x,{name:v.name,age:Number(v.age),level:v.level,tariff:v.tariff,price,notes:v.notes,startDate,fixedSchedule:fixed})}else data.students.push({id:newUuid(),name:v.name,age:Number(v.age),level:v.level,tariff:v.tariff,price,paid:false,hits:{},rainHours:0,recoveredHours:0,startDate,fixedSchedule:fixed,notes:v.notes});renderAll();const result=await save();if(!result){return}closeModal();localStorage.setItem(KEY,JSON.stringify(data));}
 async function deleteStudent(id){const x=data.students.find(a=>String(a.id)===String(id));if(!x)return;if(!confirm(`¿Eliminar a ${x.name}?\n\nSe eliminarán también sus clases, pagos, horarios y recuperaciones.`))return;try{if(googleCalendarId){try{await deleteGoogleEventsForStudent(x.name)}catch(e){console.warn('No se pudieron borrar los eventos de Google Calendar:',e)}}const sid=x.id;const [aRes,pRes,hRes,cRes]=await Promise.all([supabaseClient.from('alumnos').delete().eq('id',sid),supabaseClient.from('pagos').delete().eq('alumno_id',sid),supabaseClient.from('horarios_fijos').delete().eq('alumno_id',sid),supabaseClient.from('clases').delete().eq('alumno_id',sid)]);for(const r of [aRes,pRes,hRes,cRes])if(r.error)throw r.error;data.students=data.students.filter(a=>String(a.id)!==String(id));data.classes=data.classes.filter(c=>c.student!==x.name);data.payments=data.payments.filter(p=>p.student!==x.name);data.rain=data.rain.filter(r=>r.student!==x.name);window.openStudentCards?.delete(String(id));localStorage.setItem(KEY,JSON.stringify(data));renderAll();if(googleCalendarId){try{await syncAllToGoogle(true)}catch(e){console.warn('Google Calendar cleanup after delete:',e)}}}catch(err){alert('No se pudo eliminar el alumno: '+(err.message||err));}}
