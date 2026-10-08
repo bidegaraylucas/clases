@@ -89,7 +89,22 @@ header .btn.secondary .btn-icon{margin:0;width:17px;height:17px}
 .stat span,.card .muted,.card small{color:#586579;font-weight:550}
 body.dark .stat span,body.dark .card .muted,body.dark .card small{color:#b7bfcd!important;font-weight:550}
 .activity-days{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 4px}.activity-day{display:flex;align-items:center;gap:12px;min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-weight:650;cursor:pointer}.activity-day input{width:18px;height:18px;margin:0 0 0 auto;accent-color:#5794e6;flex:0 0 auto}body.dark .activity-day{background:#202328;border-color:#30333a}
-#authCard.loading form>:not(#authLoading){display:none!important}.plan-editor-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0}.plan-editor-toolbar button{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:5px 9px;font:inherit;cursor:pointer}.plan-toolbar-label{font-size:.78rem;color:var(--muted);margin-right:3px}.plan-editor{min-height:74px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px;outline:none}.plan-editor:empty:before{content:attr(data-placeholder);color:var(--muted)}.plan-editor:focus{border-color:var(--accent)}.plan-editor ul,.plan-editor ol,.planblock ul,.planblock ol{padding-left:24px}.plan-date{margin-top:4px}</style></head><body><div id="authGate"><div id="authCard"><h2>Mis Clases</h2><div class="sub">Iniciá sesión para acceder a tus clases.</div><form id="authForm"><input id="authEmail" type="email" placeholder="Email" autocomplete="email" required><input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password" required><div id="authError"></div><button class="btn" type="submit">Iniciar sesión</button><div id="authLoading">Comprobando sesión…</div></form></div></div><div class="app"><header><div><h1>Mis Clases</h1></div><button class="btn secondary" onclick="openModal('settings')"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"></path><path d="M19 13.5a7.7 7.7 0 0 0 0-3l2-1.2-2-3.4-2.2 1a7.7 7.7 0 0 0-2.6-1.5L14 3h-4l-.2 2.4a7.7 7.7 0 0 0-2.6 1.5L5 5.9 3 9.3l2 1.2a7.7 7.7 0 0 0 0 3l-2 1.2 2 3.4 2.2-1a7.7 7.7 0 0 0 2.6 1.5L10 21h4l.2-2.4a7.7 7.7 0 0 0 2.6-1.5l2.2 1 2-3.4-2-1.2Z"></path></svg></button></header><main>
+#authCard.loading form>:not(#authLoading){display:none!important}.plan-editor-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0}.plan-editor-toolbar button{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:5px 9px;font:inherit;cursor:pointer}.plan-toolbar-label{font-size:.78rem;color:var(--muted);margin-right:3px}.plan-editor{min-height:74px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px;outline:none}.plan-editor:empty:before{content:attr(data-placeholder);color:var(--muted)}.plan-editor:focus{border-color:var(--accent)}.plan-editor ul,.plan-editor ol,.planblock ul,.planblock ol{padding-left:24px}.plan-date{margin-top:4px}
+.plan-group-summary,.plan-item-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;cursor:pointer;list-style:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.plan-group-summary::-webkit-details-marker,.plan-item-summary::-webkit-details-marker{display:none}
+.plan-group-toggle,.plan-item-toggle{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;white-space:nowrap}
+.plan-group[open]>.plan-group-summary .plan-group-toggle>span,.plan-item[open]>.plan-item-summary .plan-item-toggle>span{transform:rotate(180deg)}
+.plan-group-toggle>span,.plan-item-toggle>span{display:inline-block;font-size:18px;transition:transform .15s}
+.plan-items{margin-top:10px}
+.plan-item{border:1px solid var(--line);border-radius:14px;margin:8px 0;overflow:hidden}
+.plan-item-summary{padding:10px 12px;background:var(--card)}
+.plan-item-summary>span:first-child{min-width:0}
+.plan-item-summary b{display:block}
+.plan-content{padding:0 12px 12px}
+.plan-actions{margin:8px 0!important}
+.plan-date{margin-top:4px}
+@media(max-width:700px){.plan-group-summary,.plan-item-summary{min-height:54px}.plan-group-toggle,.plan-item-toggle{font-size:11px}.plan-item-summary{align-items:flex-start}.plan-item-toggle{padding-top:2px}}
+</style></head><body><div id="authGate"><div id="authCard"><h2>Mis Clases</h2><div class="sub">Iniciá sesión para acceder a tus clases.</div><form id="authForm"><input id="authEmail" type="email" placeholder="Email" autocomplete="email" required><input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password" required><div id="authError"></div><button class="btn" type="submit">Iniciar sesión</button><div id="authLoading">Comprobando sesión…</div></form></div></div><div class="app"><header><div><h1>Mis Clases</h1></div><button class="btn secondary" onclick="openModal('settings')"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"></path><path d="M19 13.5a7.7 7.7 0 0 0 0-3l2-1.2-2-3.4-2.2 1a7.7 7.7 0 0 0-2.6-1.5L14 3h-4l-.2 2.4a7.7 7.7 0 0 0-2.6 1.5L5 5.9 3 9.3l2 1.2a7.7 7.7 0 0 0 0 3l-2 1.2 2 3.4 2.2-1a7.7 7.7 0 0 0 2.6 1.5L10 21h4l.2-2.4a7.7 7.7 0 0 0 2.6-1.5l2.2 1 2-3.4-2-1.2Z"></path></svg></button></header><main>
 <section id="home" class="screen active"><div class="grid" id="stats"></div><div class="section"><div class="sectionhead"><h2>Pagos por alumno</h2></div><div id="pending"></div></div></section>
 <section id="students" class="screen"><div class="sectionhead"><h2>Alumnos</h2><div><button class="btn small secondary" onclick="openModal('activity')">+ Escuelita</button> <button class="btn small" onclick="openModal('student')">+ Alumno</button></div></div><div class="toolbar"><input class="search" id="studentSearch" placeholder="Buscar alumno..." oninput="renderStudents()"></div><div id="studentList" class="list"></div><div id="activityManager"></div></section>
 <section id="studentDetail" class="screen"><div class="sectionhead"><button class="btn secondary small" onclick="backToStudents()">‹ Alumnos</button><div id="studentDetailTitle"></div></div><div id="studentDetailBody"></div></section>
@@ -190,17 +205,19 @@ async function syncToSupabase(){
   }catch(err){console.error('Supabase sync error:',err);return {ok:false,error:err};}
 }
 async function save(){
-  normalizeActivities();
-  // Always keep a local snapshot first. Supabase remains the cross-device source of truth,
-  // but a temporary network/API failure must never erase what was just entered.
-  localStorage.setItem(KEY,JSON.stringify(data));
-  renderAll();
-  const result=await syncToSupabase();
-  if(!result.ok && result.error){ console.error(result.error); alert('No se pudo sincronizar con Supabase: '+(result.error.message||result.error)); return false; }
-  localStorage.setItem(KEY,JSON.stringify(data));
-  // Coalesce rapid app changes into one serialized Calendar sync.
-  queueGoogleCalendarSync();
-  return true;
+  appSaveInProgress++;
+  try{
+    normalizeActivities();
+    localStorage.setItem(KEY,JSON.stringify(data));
+    renderAll();
+    const result=await syncToSupabase();
+    if(!result.ok && result.error){console.error(result.error);alert('No se pudo sincronizar con Supabase: '+(result.error.message||result.error));return false}
+    localStorage.setItem(KEY,JSON.stringify(data));
+    queueGoogleCalendarSync(0);
+    await runQueuedGoogleCalendarSync();
+    localStorage.setItem(KEY,JSON.stringify(data));
+    return true;
+  }finally{appSaveInProgress--}
 }
 function money(n){return '$'+Number(n||0).toLocaleString('es-AR')}function initials(n){return n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase()}function go(id,btn){const screen=document.getElementById(id);if(!screen)return;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));screen.classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');renderAll()}function renderAll(){renderHome();renderStudents();renderClassesList();renderMoney();renderPlans()}function rainDebtRows(student){
  const records=(data.rain||[]).filter(r=>String(r.student||'')===String(student.name)||String(r.studentId||'')===String(student.id));
@@ -687,7 +704,7 @@ function parsePlanNotes(value){
  const dateMatch=raw.match(/\n?\[\[fecha-plan:(\d{4}-\d{2}-\d{2})\]\]\s*$/),body=dateMatch?raw.slice(0,dateMatch.index):raw;
  return {parts:body.split(/\n\n/),date:dateMatch?.[1]||''};
 }
-function renderPlans(){const el=document.getElementById('plansList');if(!el)return;if(!data.plans.length){el.innerHTML='<div class="card empty">Todavía no hay planes.</div>';return}const groups={};data.plans.forEach(p=>{const key=p.student||'__none__';(groups[key]??=[]).push(p)});const names=Object.keys(groups).sort((a,b)=>a==='__none__'?1:b==='__none__'?-1:a.localeCompare(b,'es'));el.innerHTML=names.map((key,i)=>{const label=key==='__none__'?'Sin alumno':key,plans=groups[key].slice().sort((a,b)=>String(a.date||'9999').localeCompare(String(b.date||'9999'))||String(a.title||'').localeCompare(String(b.title||''),'es'));return '<details class="card plan-group" '+(i===0?'open':'')+'><summary style="cursor:pointer;font-weight:750;list-style:none;display:flex;justify-content:space-between;align-items:center"><span>'+label+'</span><span class="muted">'+plans.length+' '+(plans.length===1?'plan':'planes')+' · ⌄</span></summary><div style="margin-top:12px">'+plans.map(p=>'<div class="card" style="box-shadow:none;border:1px solid var(--line);margin-bottom:10px"><div class="row between"><div><b>'+p.title+'</b>'+planDateMeta(p)+'</div><div class="actions" style="margin:0"><button class="btn secondary small" onclick="openModal(\'plan\',\''+p.id+'\')">Editar</button><button class="btn secondary small" onclick="deletePlan(\''+p.id+'\')">×</button></div></div>'+renderPlanFields(p)+'<div class="plan-meta">'+[['Situación',p.situation],['Objetivo táctico',p.tactical],['Herramienta técnica',p.technical],['Elemento de control',p.control],['Principio biomecánico',p.bio]].filter(x=>x[1]).map(x=>'<div><b>'+x[0]+':</b> '+x[1]+'</div>').join('')+'</div></div>').join('')+'</div></details>'}).join('')}
+function renderPlans(){const el=document.getElementById('plansList');if(!el)return;if(!data.plans.length){el.innerHTML='<div class="card empty">Todavía no hay planes.</div>';return}const groups={};data.plans.forEach(p=>{const key=p.student||'__none__';(groups[key]??=[]).push(p)});const names=Object.keys(groups).sort((a,b)=>a==='__none__'?1:b==='__none__'?-1:a.localeCompare(b,'es'));el.innerHTML=names.map((key,i)=>{const label=key==='__none__'?'Sin alumno':key,plans=groups[key].slice().sort((a,b)=>String(a.date||'9999').localeCompare(String(b.date||'9999'))||String(a.title||'').localeCompare(String(b.title||''),'es'));return '<details class="card plan-group" '+(i===0?'open':'')+'><summary class="plan-group-summary"><span>'+label+'</span><span class="plan-group-toggle">'+plans.length+' '+(plans.length===1?'plan':'planes')+' · Tocar para ver <span aria-hidden="true">⌄</span></span></summary><div class="plan-items">'+plans.map(p=>'<details class="plan-item"><summary class="plan-item-summary"><span><b>'+p.title+'</b>'+planDateMeta(p)+'</span><span class="plan-item-toggle">Ver planificación <span aria-hidden="true">⌄</span></span></summary><div class="plan-content"><div class="actions plan-actions"><button class="btn secondary small" onclick="openModal(\'plan\',\''+p.id+'\')">Editar</button><button class="btn secondary small" onclick="deletePlan(\''+p.id+'\')">Eliminar</button></div>'+renderPlanFields(p)+'<div class="plan-meta">'+[['Situación',p.situation],['Objetivo táctico',p.tactical],['Herramienta técnica',p.technical],['Elemento de control',p.control],['Principio biomecánico',p.bio]].filter(x=>x[1]).map(x=>'<div><b>'+x[0]+':</b> '+x[1]+'</div>').join('')+'</div></div></details>').join('')+'</div></details>'}).join('')}
 function openModal(type,id){let s=document.getElementById('sheet');document.getElementById('modal').classList.add('show');if(type==='student'){let x=data.students.find(a=>a.id==id)||{name:'',age:'',level:'',notes:'',tariff:'individual',fixedSchedule:{active:false,day:0,time:'',duration:1}};let f=x.fixedSchedule||{};s.innerHTML=`<h2>${id?'Editar':'Nuevo'} alumno</h2><form class="form" onsubmit="saveStudent(event,'${id||''}')"><label>Nombre<input required name="name" value="${x.name}"></label><label>Edad<input type="number" name="age" value="${x.age}"></label><label>Nivel<input name="level" value="${x.level}"></label><label>Tarifa<select name="tariff" onchange="setStudentPrice(this)"><option value="class" ${x.tariff==='class'?'selected':''}>Pago por clase</option><option value="individual" ${x.tariff==='individual'?'selected':''}>Individual mensual</option><option value="group" ${x.tariff==='group'?'selected':''}>Grupal mensual</option><option value="custom" ${x.tariff==='custom'?'selected':''}>Personalizada</option></select></label><label>Precio acordado<input id="studentPrice" type="number" name="price" min="0" step="1" value="${Number(x.price||0)}" required><small class="muted">Podés modificarlo aunque la tarifa sea mensual o por clase.</small></label><label>Inicio de clases<input type="date" name="startDate" value="${x.startDate||''}"><small class="muted">Los horarios semanales empiezan a aparecer desde esta fecha.</small></label><div class="card" style="box-shadow:none;background:#f7f8fa;margin:0"><b class="section-label"><svg class="inline-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M4 10h16"></path></svg>Clases semanales</b><label style="margin-top:10px;display:block">Días de la semana</label><div class="hitgrid">${['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].map((d,i)=>`<label class="hit"><span>${d}</span><input type="checkbox" name="fixedDays" value="${i}" ${(Array.isArray(f)?f.flatMap(z=>z.days||[z.day]).map(Number):[]).includes(i)?'checked':''}></label>`).join('')}</div><label style="margin-top:9px;display:block">Hora<input type="time" name="fixedTime" value="${f.time||''}"></label><label style="margin-top:9px;display:block">Duración<input type="number" name="fixedDuration" min="0.5" step="0.5" value="${f.duration||1}"></label><small class="muted">Podés elegir varios días. Todos usan la misma hora y duración.</small></div><label>Observaciones<textarea name="notes">${x.notes||''}</textarea></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='class'){s.innerHTML=`<h2>Nueva clase</h2><form class="form" onsubmit="saveClass(event)"><label>Tipo<select name="type"><option>Clase suelta</option><option>Recuperación</option><option>Clase grupal</option></select></label><div id="normalClassFields"><label>Alumno<select name="student">${data.students.map(x=>`<option value="${x.id}" ${String(x.id)===String(id)?'selected':''}>${x.name}</option>`).join('')}</select></label><label>Fecha<input type="date" name="date" required></label></div><label>Hora<input type="time" name="time" required></label><label>Duración (horas)<input type="number" name="duration" value="1" min="0.5" step="0.5"></label><label>Nota<input name="note" placeholder="Objetivo de la clase"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='activityPayment'){const [activityId,activityDate]=String(id||'').split('|'),a=(data.activities||[]).find(x=>String(x.id)===String(activityId)),occ=a?.occurrences?.[activityDate]||{};if(!a||occ.status!=='needed'){closeModal();return}s.innerHTML=`<h2>Registrar pago</h2><p class="sub">${a.name} · ${activityDate.split('-').reverse().join('/')}</p><form class="form" onsubmit="saveActivityPayment(event,'${activityId}','${activityDate}')"><label>Importe recibido<input type="number" name="amount" min="0" step="1" value="${Number(occ.amount??a.amount??0)}" required></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Confirmar pago</button></div></form>`}if(type==='activity'){const now=new Date(),monthStart=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;let a=id?(data.activities||[]).find(x=>String(x.id)===String(id)):null;a=a||{name:'Escuelita',days:[1,3],startDate:monthStart,time:'17:00',duration:1,amount:0,occurrences:{}};s.innerHTML=`<h2>${id?'Editar':'Nueva'} actividad recurrente</h2><form class="form" onsubmit="saveActivity(event,'${id||''}')"><label>Nombre<input required name="name" value="${a.name||''}"></label><label>Días</label><div class="activity-days">${['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'].map((d,i)=>`<label class="activity-day"><span>${d}</span><input type="checkbox" name="days" value="${i}" ${(a.days||[]).map(Number).includes(i)?'checked':''}></label>`).join('')}</div><label>Fecha de inicio<input type="date" name="startDate" value="${a.startDate||''}"></label><label>Hora<input type="time" name="time" value="${a.time||''}" required></label><label>Duración (horas)<input type="number" name="duration" min="0.5" step="0.5" value="${a.duration||1}" required></label><label>Importe por ocurrencia<input type="number" name="amount" min="0" step="1" value="${Number(a.amount||0)}" required></label><p class="sub">Cada fecha queda como “A confirmar”. Si te necesitan, la marcás y podés modificar el importe. Si no, “No requerida” y desaparece de Google Calendar.</p><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='reprogram'){
   const studentsWithClasses=data.students.filter(x=>x.name);
   s.innerHTML=`<h2>Reprogramar clase</h2>
@@ -1269,19 +1286,30 @@ async function ensureGoogleAccessToken(){
   if(!ok)throw new Error('Google Calendar no está conectado.');
   return googleToken;
 }
-function queueGoogleCalendarSync(delay=1100){
+const GOOGLE_SYNC_PENDING_KEY='mcGoogleCalendarSyncPending';
+let appSaveInProgress=0;
+window.addEventListener('beforeunload',event=>{if(appSaveInProgress>0){event.preventDefault();event.returnValue=''}});
+function queueGoogleCalendarSync(delay=0){
   googleSyncPending=true;
+  localStorage.setItem(GOOGLE_SYNC_PENDING_KEY,'1');
   if(googleSyncTimer)clearTimeout(googleSyncTimer);
   googleSyncTimer=setTimeout(runQueuedGoogleCalendarSync,delay);
 }
 async function runQueuedGoogleCalendarSync(){
   googleSyncTimer=null;
-  if(googleSyncInFlight||!googleSyncPending)return;
-  googleSyncPending=false;
-  googleSyncInFlight=syncAllToGoogle(true);
-  try{await googleSyncInFlight}
-  catch(err){console.error('Google Calendar auto-sync:',err);alert('Los cambios se guardaron en la app, pero no se pudieron sincronizar con Google Calendar: '+(err.message||err))}
-  finally{googleSyncInFlight=null;if(googleSyncPending)queueGoogleCalendarSync(1300)}
+  while(true){
+    if(googleSyncInFlight){try{await googleSyncInFlight}catch{};if(!googleSyncPending)return;continue}
+    if(!googleSyncPending)return;
+    googleSyncPending=false;
+    localStorage.setItem(GOOGLE_SYNC_PENDING_KEY,'1');
+    const job=syncAllToGoogle(true);googleSyncInFlight=job;
+    let succeeded=false;
+    try{await job;succeeded=true}
+    catch(err){googleSyncPending=true;localStorage.setItem(GOOGLE_SYNC_PENDING_KEY,'1');console.error('Google Calendar auto-sync:',err);alert('Los cambios se guardaron en la app, pero no se pudieron sincronizar con Google Calendar: '+(err.message||err))}
+    finally{googleSyncInFlight=null}
+    if(succeeded){localStorage.removeItem(GOOGLE_SYNC_PENDING_KEY);if(!googleSyncPending)return}
+    else return;
+  }
 }
 async function syncAllToGoogle(auto=false){
   await ensureGoogleAccessToken();
@@ -1617,6 +1645,8 @@ let appEntered=false; async function enterApp(){
  }
  authCard?.classList.remove('loading');authGate.style.display='none';authLoading.style.display='none';renderAll();
  try{await initGoogleCalendar()}catch(e){console.warn('Google Calendar:',e)}
+ if(localStorage.getItem(GOOGLE_SYNC_PENDING_KEY)==='1')queueGoogleCalendarSync(0);
+ window.addEventListener('online',()=>{if(localStorage.getItem(GOOGLE_SYNC_PENDING_KEY)==='1')queueGoogleCalendarSync(0)});
  try{const handled=await handleGoogleOAuthCallback();if(handled)alert('Google Calendar conectado. Tus clases se sincronizarán automáticamente.')}
  catch(e){console.error('Google OAuth callback:',e);alert('No se pudo conectar Google Calendar: '+(e.message||e));window.history.replaceState({},document.title,window.location.pathname)}
  renderAll();
