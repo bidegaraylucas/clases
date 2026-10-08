@@ -227,10 +227,10 @@ function groupRainDebtRows(members){
  if(!members?.length)return [];
  const sorted=members.slice().sort((a,b)=>a.name.localeCompare(b.name,'es')),primary=sorted[0];
  const names=new Set(members.map(x=>String(x.name))),ids=new Set(members.map(x=>String(x.id))),grouped=new Map();
- for(const record of data.rain||[]){
+ for(const [recordIndex,record] of (data.rain||[]).entries()){
   if(!names.has(String(record.student||''))&&!ids.has(String(record.studentId||record.fixedStudentId||'')))continue;
   const time=String(record.fixedTime||record.time||'').slice(0,5),hours=Number(record.hours||0),recovered=Number(record.recoveredHours||0);
-  const key=record.date&&time?`${record.date}|${time}|${hours}`:`record|${record.id||Math.random()}`;
+  const key=record.date&&time?`${record.date}|${time}|${hours}`:`record|${record.id||recordIndex}`;
   if(!grouped.has(key))grouped.set(key,[]);
   grouped.get(key).push({record,remaining:Math.max(0,hours-recovered)});
  }
