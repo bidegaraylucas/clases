@@ -874,17 +874,30 @@ async function cleanupGoogleOrphans(){
 async function syncFixedSuspensionsToGoogle(){
  if(!googleCalendarId)return;
  let map={};try{map=JSON.parse(await getConfig('google_fixed_event_ids')||'{}')}catch{}
- const changes=[...(data.fixedOverrides||[])],seriesCache=new Map();
+ const rawChanges=[...(data.fixedOverrides||[])],seriesCache=new Map();
  for(const item of [...(data.rain||[]),...(data.cancellations||[])]){
-  if(!item.fixedOccurrenceId||changes.some(x=>String(x.fixedOccurrenceId)===String(item.fixedOccurrenceId)))continue;
+  if(!item.fixedOccurrenceId||rawChanges.some(x=>String(x.fixedOccurrenceId)===String(item.fixedOccurrenceId)))continue;
   const migrated={...item,status:(data.rain||[]).some(x=>x.id===item.id)?'rain':'cancel'};
-  data.fixedOverrides.push(migrated);changes.push(migrated);
+  data.fixedOverrides.push(migrated);rawChanges.push(migrated);
+ }
+ const groups=new Map();
+ for(const item of rawChanges){
+  if(!item.fixedOccurrenceId||!item.fixedStudentId||!item.date)continue;
+  const student=data.students.find(x=>String(x.id)===String(item.fixedStudentId));
+  const dt=new Date(item.date+'T12:00:00'),day=(dt.getDay()+6)%7;
+  const seriesId=map[item.fixedStudentId+'|'+day]||map[item.fixedStudentId]||'';
+  const time=String(item.time||item.fixedTime||'').slice(0,5),duration=Number(item.duration||item.hours||1);
+  const sameSlotMembers=student?.tariff==='group'?data.students.filter(st=>st.tariff==='group'&&studentSchedules(st).some(sch=>{
+   const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
+   return days.includes(day)&&String(sch.time||'').slice(0,5)===time&&Number(sch.duration||1)===duration;
+  })):[student].filter(Boolean);
+  const key=sameSlotMembers.length>1&&seriesId?`${seriesId}|${item.date}|${time}|${duration}`:String(item.fixedOccurrenceId);
+  if(!groups.has(key))groups.set(key,{items:[],seriesId,date:item.date,time,duration,day,members:sameSlotMembers});
+  groups.get(key).items.push(item);
  }
  let changed=false;
- for(const item of changes){
-  if(!item.fixedOccurrenceId||!item.fixedStudentId||!item.date)continue;
-  const student=data.students.find(x=>String(x.id)===String(item.fixedStudentId)),studentName=item.student||student?.name||'';
-  const dt=new Date(item.date+'T12:00:00'),day=(dt.getDay()+6)%7,seriesId=map[item.fixedStudentId+'|'+day]||map[item.fixedStudentId];
+ for(const group of groups.values()){
+  const items=group.items,primary=items[0],seriesId=group.seriesId;
   let seriesEvent=null;
   if(seriesId){
    if(seriesCache.has(seriesId))seriesEvent=seriesCache.get(seriesId);
@@ -894,49 +907,58 @@ async function syncFixedSuspensionsToGoogle(){
     seriesCache.set(seriesId,seriesEvent);
    }
   }
-  const groupMembers=(student?.tariff==='group'?data.students.filter(st=>{
-   if(st.tariff!=='group')return false;
-   return studentSchedules(st).some(sch=>{
-    const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
-    return days.includes(day)&&String(sch.time||'').slice(0,5)===String(item.time||'').slice(0,5)&&Number(sch.duration||1)===Number(item.duration||1);
-   });
-  }):[student]).filter(Boolean);
-  const groupNames=(seriesEvent?.extendedProperties?.private?.student||'').split(' + ').map(x=>x.trim()).filter(Boolean);
-  const names=groupNames.length>1?groupNames:(groupMembers.length>1?groupMembers.map(x=>x.name):[studentName]);
-  const baseSummary=names.join(' + ')||seriesEvent?.summary||studentName;
-  const status=item.status||'normal',summary=googleStatusTitle(baseSummary,studentName,status);
+  const storedNames=String(seriesEvent?.extendedProperties?.private?.student||'').split(' + ').map(x=>x.trim()).filter(Boolean);
+  const names=storedNames.length>1?storedNames:(group.members.length>1?group.members.map(x=>x.name):[primary.student||data.students.find(x=>String(x.id)===String(primary.fixedStudentId))?.name||'']);
+  const baseSummary=names.join(' + ')||seriesEvent?.summary||primary.student||'Clase';
+  const statuses=items.map(x=>x.status||'normal');
+  const status=statuses.includes('rain')?'rain':statuses.includes('cancel')?'cancel':'normal';
+  for(const item of items)item.status=status;
+  const summary=googleStatusTitle(baseSummary,names[0],status);
   const description=status==='rain'?'Suspendida por lluvia · se recupera':status==='cancel'?'Cancelada por el alumno · no se recupera':'Horario fijo de Mis Clases';
   const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const privateProps={mis_clases:'1',kind:'fixed_instance',student:names.join(' + '),fixed_occurrence_id:item.fixedOccurrenceId,fixed_status:status,status_student:studentName};
-  let eventId=item.googleEventId||null,updated=false;
-  const writeEvent=async(id,kind='fixed_instance')=>{
-   const props=Object.assign({},privateProps,{kind});
-   const dtRange=googleDateTime(item.date,item.time,item.duration);
-   const body={summary,description,start:{dateTime:dtRange.start,timeZone:tz},end:{dateTime:dtRange.end,timeZone:tz},extendedProperties:{private:props}};
-   await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(body)});
-  };
-  if(eventId){
-   try{await writeEvent(eventId);updated=true}
-   catch(e){if(!isGoogleMissingResource(e))throw e;item.googleEventId=null;eventId=null}
-  }
-  if(!updated&&seriesId){
-   const startLocal=new Date(item.date+'T00:00:00'),endLocal=new Date(startLocal.getTime()+86400000);
+  const privateProps={mis_clases:'1',kind:'fixed_instance',student:names.join(' + '),fixed_occurrence_id:primary.fixedOccurrenceId,fixed_status:status,status_student:names.join(' + ')};
+  const ids=[...new Set(items.map(x=>x.googleEventId).filter(Boolean))];
+  let eventId=ids[0]||null,occurrence=null;
+  if(!eventId&&seriesId){
+   const startLocal=new Date(group.date+'T00:00:00'),endLocal=new Date(startLocal.getTime()+86400000);
    const params='singleEvents=true&showDeleted=false&timeMin='+encodeURIComponent(startLocal.toISOString())+'&timeMax='+encodeURIComponent(endLocal.toISOString())+'&maxResults=20';
-   const result=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(seriesId)+'/instances?'+params,{method:'GET'});
-   const occurrence=(result.items||[]).find(ev=>String(ev.originalStartTime?.dateTime||ev.start?.dateTime||'').slice(0,10)===item.date);
+   const result=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(seriesId)+'/instances?'+params);
+   occurrence=(result.items||[]).find(ev=>String(ev.originalStartTime?.dateTime||ev.start?.dateTime||'').slice(0,10)===group.date);
    if(occurrence){
-    const props=Object.assign({},occurrence.extendedProperties?.private||{},privateProps,{kind:'fixed',student:names.join(' + ')});
-    const body={summary:googleStatusTitle(baseSummary,studentName,status),description,start:occurrence.start,end:occurrence.end,extendedProperties:{private:props}};
-    await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(occurrence.id),{method:'PUT',body:JSON.stringify(body)});
-    item.googleEventId=occurrence.id;updated=true;changed=true;
+    const pp=occurrence.extendedProperties?.private||{};
+    const hasOverride=!!pp.fixed_occurrence_id||occurrence.summary!==baseSummary||occurrence.description!=='Horario fijo de Mis Clases';
+    if(status==='normal'&&!hasOverride){
+     items.forEach(item=>item.googleEventId=null);
+     continue;
+    }
+    eventId=occurrence.id;
    }
   }
-  if(!updated){
-   const dtRange=googleDateTime(item.date,item.time,item.duration);
-   const body={summary,description,start:{dateTime:dtRange.start,timeZone:tz},end:{dateTime:dtRange.end,timeZone:tz},extendedProperties:{private:privateProps}};
-   const created=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events',{method:'POST',body:JSON.stringify(body)});
-   item.googleEventId=created.id;changed=true;
+  const bodyFor=(start,end)=>({summary,description,start,end,extendedProperties:{private:privateProps}});
+  let savedId=eventId;
+  if(eventId){
+   try{
+    let current=occurrence;
+    if(!current){try{current=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId))}catch(e){if(!isGoogleMissingResource(e))throw e}}
+    const start=current?.start||(()=>{const r=googleDateTime(group.date,group.time,group.duration);return {dateTime:r.start,timeZone:tz}})();
+    const end=current?.end||(()=>{const r=googleDateTime(group.date,group.time,group.duration);return {dateTime:r.end,timeZone:tz}})();
+    await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId),{method:'PUT',body:JSON.stringify(bodyFor(start,end))});
+   }catch(e){if(!isGoogleMissingResource(e))throw e;savedId=null}
   }
+  if(!savedId&&status!=='normal'){
+   const range=googleDateTime(group.date,group.time,group.duration);
+   const created=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events',{method:'POST',body:JSON.stringify({...bodyFor({dateTime:range.start,timeZone:tz},{dateTime:range.end,timeZone:tz}),extendedProperties:{private:{...privateProps,kind:'fixed_instance'}}})});
+   savedId=created.id;
+  }
+  if(savedId){
+   for(const duplicateId of ids.slice(1)){
+    if(duplicateId===savedId)continue;
+    try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(duplicateId),{method:'DELETE'})}
+    catch(e){if(!isGoogleMissingResource(e))throw e}
+   }
+  }
+  for(const item of items){item.googleEventId=savedId;item.status=status}
+  changed=true;
  }
  if(changed||data.fixedOverrides?.length)await setConfig('estados_clases_fijas',JSON.stringify(data.fixedOverrides||[]));
 }
