@@ -1061,6 +1061,10 @@ async function initGoogleCalendar(){
   try{
     googleCalendarId=await getConfig('google_calendar_id');
     const connected=await refreshPersistentGoogleToken();
+    if(connected){
+      await ensureGoogleCalendar();
+      await syncActivitiesToGoogle();
+    }
     updateGoogleStatus();
     return connected;
   }catch(e){console.warn('Google Calendar config:',e.message);googleToken=null;googleConnectionError=true;updateGoogleStatus();return false}
