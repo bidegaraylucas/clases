@@ -955,7 +955,7 @@ async function syncFixedSuspensionsToGoogle(){
    savedId=created.id;
   }
   if(savedId){
-   for(const duplicateId of ids.slice(1)){
+   for(const duplicateId of ids){
     if(duplicateId===savedId)continue;
     try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(duplicateId),{method:'DELETE'})}
     catch(e){if(!isGoogleMissingResource(e))throw e}
