@@ -643,7 +643,7 @@ async function syncFixedSuspensionsToGoogle(){
         const body={summary,description,start:ev.start,end:ev.end,extendedProperties:{private:privateProps}};
         await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(ev.id)}`,{method:'PUT',body:JSON.stringify(body)});
       }
-    }catch(e){console.warn('No se pudo actualizar la ocurrencia fija en Google Calendar:',e)}
+    }catch(e){throw new Error('No se pudo actualizar la ocurrencia fija en Google Calendar: '+(e.message||e))}
   }
 }
 async function syncFixedSchedulesToGoogle(){
@@ -852,9 +852,8 @@ async function syncAllToGoogle(auto=false){
   await ensureGoogleCalendar();
   await cleanupGoogleOrphans();
   for(const c of data.classes)await syncClassToGoogle(c);
-  // Un fallo en los horarios fijos no debe bloquear el resto de la app ni el login.
-  try{await syncFixedSchedulesToGoogle()}catch(e){console.warn('Google Calendar fixed:',e);}
-  try{await syncFixedSuspensionsToGoogle()}catch(e){console.warn('Google Calendar fixed suspensions:',e);}
+  await syncFixedSchedulesToGoogle();
+  await syncFixedSuspensionsToGoogle();
   try{await syncActivitiesToGoogle()}catch(e){console.warn('Google Calendar Escuelita:',e);}
   updateGoogleStatus();
   return true
