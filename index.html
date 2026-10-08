@@ -875,7 +875,7 @@ async function syncClassToGoogle(c){
   const groupLabel=String(c.note||'').match(/^\[Grupo:([^\]]+)\]/)?.[1]||'';
   const displayStudent=groupLabel||c.student;
   const isGroup=(c.classType==='group'||c.grouped===true||c.grouped==='1'||c.status==='Clase grupal'||(c.status==='Recuperación'&&studentObj?.tariff==='group')||!!groupLabel);
-  const ordinaryTitle=(c.status==='Recuperación'?'🔁 R - ':'')+displayStudent;
+  const ordinaryTitle=(c.status==='Recuperación'?'🔁 ':'')+displayStudent;
   const title=status?googleStatusTitle(displayStudent,displayStudent,status):ordinaryTitle;
   const eventNote=String(c.note||'').replace(/^\[Grupo:[^\]]+\]\s*/,'');
   const dt=googleDateTime(c.date,c.time,c.duration);
