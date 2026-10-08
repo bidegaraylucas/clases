@@ -217,8 +217,8 @@ function money(n){return '$'+Number(n||0).toLocaleString('es-AR')}function initi
   const reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
   return {id:r.id||('rain-'+student.id+'-'+index),recordId:r.id||null,date:r.date||scheduledClass?.date||'',time:r.fixedTime||r.time||scheduledClass?.time||'',hours:remaining,availableHours:Math.max(0,remaining-reserved),scheduled:future,source:r};
  }).filter(r=>r.hours>0);
- const unmatched=Math.max(0,pendingHours(student)-total);
- if(unmatched>0)rows.push({id:'unmatched-'+student.id,recordId:null,date:'',time:'',hours:unmatched,availableHours:unmatched,scheduled:[],source:null,unmatched:true});
+ const unmatched=Math.max(0,pendingHours(student)-total),legacyId='legacy-'+student.id,scheduled=scheduledRecoveriesForRain(legacyId),future=scheduled.filter(c=>c.date>=localDateKey()),reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
+ if(unmatched>0)rows.push({id:'unmatched-'+student.id,recordId:legacyId,date:'',time:'',hours:unmatched,availableHours:Math.max(0,unmatched-reserved),scheduled:future,source:null,unmatched:true});
  return rows;
 }
 function normalizeRainRecoveries(student){
@@ -299,7 +299,7 @@ function openRainRecovery(studentId,rainId){
  sheet.innerHTML='<h2>Programar recuperación</h2><p class="sub">'+(group?'Grupo: '+studentGroupLabel(members)+'<br>':'')+'Suspensión: '+date+' · '+(item.time||'hora no registrada')+'<br>Pendiente: <b>'+item.hours+' h</b></p><form class="form" onsubmit="saveRainRecovery(event)"><input type="hidden" name="studentId" value="'+student.id+'"><input type="hidden" name="rainId" value="'+item.id+'"><label>Horas a programar<input type="number" name="hours" min="0.5" step="0.5" max="'+item.availableHours+'" value="'+item.availableHours+'" required></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required></label><label>Detalle<input name="note" placeholder="Recuperación de lluvia"></label><div class="actions"><button type="button" class="btn secondary" onclick="openRainDebtOverview(&quot;'+student.id+'&quot;)">Volver</button><button class="btn">Programar recuperación</button></div></form>';
 }
 function maxSchedulableRecoveryHours(student){return Math.max(0,...rainDebtRows(student).map(r=>Number(r.availableHours||0)));}
-function scheduleStudentRecovery(student,date,time,hours,note){const row=rainDebtRows(student).find(r=>Number(r.availableHours||0)>=hours);if(!row)return false;data.classes.push({id:newUuid(),student:student.name,date,time:time||'',duration:hours,status:'Recuperación',classType:student.tariff==='group'?'group':'individual',note:note||'Recuperación de lluvia',plannedRecovery:true,recoveryRainId:row.recordId});return true;}
+function scheduleStudentRecovery(student,date,time,hours,note){const row=rainDebtRows(student).find(r=>Number(r.availableHours||0)>=hours);if(!row)return false;data.classes.push({id:newUuid(),student:student.name,date,time:time||'',duration:hours,status:'Recuperación',classType:student.tariff==='group'?'group':'individual',note:note||'Recuperación de lluvia',plannedRecovery:true,recoveryRainId:row.recordId||('legacy-'+student.id)});return true;}
 function applyRainRecovery(student,rainId,hours){
  normalizeRainRecoveries(student);
  let target=rainId&&String(rainId).startsWith('rain-')?null:(data.rain||[]).find(r=>String(r.id)===String(rainId));
@@ -318,7 +318,7 @@ async function saveRainRecovery(e){
  const members=studentGroupMembers(student),group=members.length>1,rows=group?groupRainDebtRows(members):rainDebtRows(student),item=rows.find(x=>String(x.id)===String(v.rainId));
  const hours=Number(v.hours||0),available=Number(item?.availableHours??item?.hours??0);
  if(!item||hours<=0||hours>available){alert('Las horas deben ser mayores a cero y no pueden superar las pendientes que todavía no tienen fecha programada.');return}
- const source=item.source||{},rainId=item.recordId||item.id;
+ const source=item.source||{},rainId=item.unmatched?'legacy-'+student.id:(item.recordId||item.id);
  const detail='Recuperación de la suspensión del '+(item.date||'')+(item.time?' a las '+item.time:'');
  const note=(group?'[Grupo:'+studentGroupLabel(members)+'] ':'')+(v.note||detail);
  data.classes.push({id:newUuid(),student:student.name,date:v.date,time:v.time,duration:hours,status:'Recuperación',classType:group?'group':(student.tariff==='group'?'group':'individual'),note,plannedRecovery:true,recoveryRainId:rainId});
