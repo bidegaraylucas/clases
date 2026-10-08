@@ -86,10 +86,10 @@ header .btn.secondary .btn-icon{margin:0;width:17px;height:17px}
 </style></head><body><div id="authGate"><div id="authCard"><h2>Mis Clases</h2><div class="sub">Iniciá sesión para acceder a tus clases.</div><form id="authForm"><input id="authEmail" type="email" placeholder="Email" autocomplete="email" required><input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password" required><div id="authError"></div><button class="btn" type="submit">Iniciar sesión</button><div id="authLoading">Comprobando sesión…</div></form></div></div><div class="app"><header><div><h1>Mis Clases</h1></div><button class="btn secondary" onclick="openModal('settings')"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"></path><path d="M19 13.5a7.7 7.7 0 0 0 0-3l2-1.2-2-3.4-2.2 1a7.7 7.7 0 0 0-2.6-1.5L14 3h-4l-.2 2.4a7.7 7.7 0 0 0-2.6 1.5L5 5.9 3 9.3l2 1.2a7.7 7.7 0 0 0 0 3l-2 1.2 2 3.4 2.2-1a7.7 7.7 0 0 0 2.6 1.5L10 21h4l.2-2.4a7.7 7.7 0 0 0 2.6-1.5l2.2 1 2-3.4-2-1.2Z"></path></svg></button></header><main>
 <section id="home" class="screen active"><div class="grid" id="stats"></div><div class="section"><div class="sectionhead"><h2>Pagos pendientes</h2></div><div id="pending"></div></div></section>
 <section id="students" class="screen"><div class="sectionhead"><h2>Alumnos</h2><div><button class="btn small secondary" onclick="openModal('activity')">+ Escuelita</button> <button class="btn small" onclick="openModal('student')">+ Alumno</button></div></div><div class="toolbar"><input class="search" id="studentSearch" placeholder="Buscar alumno..." oninput="renderStudents()"></div><div id="studentList" class="list"></div><div id="activityManager"></div></section>
-<section id="studentDetail" class="screen"><div class="sectionhead"><button class="btn secondary small" onclick="backToStudents()">‹ Alumnos</button><div id="studentDetailTitle"></div></div><div id="studentDetailBody"></div></section><section id="classes" class="screen"><div class="sectionhead"><div><h2>Clases</h2><div class="sub">Vista semanal. Para cambiar el estado, abrí la agenda del alumno.</div></div><div><button class="btn small" onclick="openModal('class')">+ Clase</button></div></div><div class="weekbar"><button class="btn secondary small" onclick="changeClassWeek(-1)">‹</button><div><b id="classWeekTitle"></b><div class="muted" id="classWeekRange"></div></div><button class="btn secondary small" onclick="changeClassWeek(1)">›</button></div><div id="classWeekList"></div><div id="classPending"></div></section>
+<section id="studentDetail" class="screen"><div class="sectionhead"><button class="btn secondary small" onclick="backToStudents()">‹ Alumnos</button><div id="studentDetailTitle"></div></div><div id="studentDetailBody"></div></section>
 <section id="money" class="screen"><div class="sectionhead"><h2>Finanzas</h2><button class="btn small" onclick="openModal('payment')">+ Pago</button></div><div class="grid" id="moneyStats"></div><div class="section"><div class="sectionhead"><h2>Tarifas</h2><button class="btn small secondary" onclick="openModal('rates')">Editar</button></div><div id="ratesBox"></div></div><div class="section"><h2 style="margin-bottom:11px">Movimientos</h2><div id="paymentsList"></div></div></section>
 <section id="plans" class="screen"><div class="sectionhead"><h2>Planificación JAJ</h2><button class="btn small" onclick="openModal('plan')">+ Plan</button></div><div id="plansList"></div></section>
-</main><div class="bottom"><nav class="nav"><button class="active" onclick="go('home',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-7h5v7"></path></svg>Inicio</button><button onclick="go('students',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Alumnos</button><button onclick="go('classes',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16"></rect><path d="M7 3v4M17 3v4M4 10h16"></path><path d="M8 14h3M8 18h5"></path></svg>Clases</button><button onclick="go('money',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16a1 1 0 0 1 1 1v12H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"></path><path d="M3 9h18"></path><path d="M16 14h3"></path></svg>Finanzas</button><button onclick="go('plans',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M15 3v4h3M9 11h6M9 15h6M9 19h4"></path></svg>Planes</button></nav></div></div><div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+</main><div class="bottom"><nav class="nav"><button class="active" onclick="go('home',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-7h5v7"></path></svg>Inicio</button><button onclick="go('students',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Alumnos</button><button onclick="go('money',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16a1 1 0 0 1 1 1v12H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"></path><path d="M3 9h18"></path><path d="M16 14h3"></path></svg>Finanzas</button><button onclick="go('plans',this)"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"></path><path d="M15 3v4h3M9 11h6M9 15h6M9 19h4"></path></svg>Planes</button></nav></div></div><div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
@@ -633,22 +633,51 @@ async function syncFixedSuspensionsToGoogle(){
  if(!googleCalendarId)return;
  let map={};try{map=JSON.parse(await getConfig('google_fixed_event_ids')||'{}')}catch{}
  const changes=[...(data.fixedOverrides||[])];
- for(const item of [...(data.rain||[]),...(data.cancellations||[])])if(item.fixedOccurrenceId&&!changes.some(x=>String(x.fixedOccurrenceId)===String(item.fixedOccurrenceId)))changes.push({...item,status:(data.rain||[]).includes(item)?'rain':'cancel'});
+ for(const item of [...(data.rain||[]),...(data.cancellations||[])]){
+  if(!item.fixedOccurrenceId||changes.some(x=>String(x.fixedOccurrenceId)===String(item.fixedOccurrenceId)))continue;
+  const migrated={...item,status:(data.rain||[]).some(x=>x.id===item.id)?'rain':'cancel'};
+  data.fixedOverrides.push(migrated);changes.push(migrated);
+ }
+ let changed=false;
  for(const item of changes){
   if(!item.fixedOccurrenceId||!item.fixedStudentId||!item.date)continue;
   const student=data.students.find(x=>String(x.id)===String(item.fixedStudentId)),studentName=item.student||student?.name||'';
-  const dt=new Date(item.date+'T12:00:00'),day=(dt.getDay()+6)%7,seriesId=map[item.fixedStudentId+'|'+day]||map[item.fixedStudentId];if(!seriesId)continue;
-  const startLocal=new Date(item.date+'T00:00:00'),endLocal=new Date(startLocal.getTime()+86400000);
-  const params='singleEvents=true&showDeleted=false&timeMin='+encodeURIComponent(startLocal.toISOString())+'&timeMax='+encodeURIComponent(endLocal.toISOString())+'&maxResults=20';
-  const result=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(seriesId)+'/instances?'+params,{method:'GET'});
-  for(const ev of(result.items||[])){
-   const instanceDate=String(ev.originalStartTime?.dateTime||ev.start?.dateTime||'').slice(0,10);if(instanceDate!==item.date)continue;
-   const status=item.status||'normal',summary=googleStatusTitle(ev.summary||studentName,studentName,status);
-   const description=status==='rain'?'Suspendida por lluvia · se recupera':status==='cancel'?'Cancelada por el alumno · no se recupera':'Horario fijo de Mis Clases';
-   const props=Object.assign({},ev.extendedProperties?.private||{},{mis_clases:'1',kind:'fixed',student:ev.extendedProperties?.private?.student||studentName,fixed_status:status,status_student:studentName});
-   await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(ev.id),{method:'PUT',body:JSON.stringify({summary,description,start:ev.start,end:ev.end,extendedProperties:{private:props}})});
+  const dt=new Date(item.date+'T12:00:00'),day=(dt.getDay()+6)%7,seriesId=map[item.fixedStudentId+'|'+day]||map[item.fixedStudentId];
+  const status=item.status||'normal',summary=googleStatusTitle(studentName,studentName,status);
+  const description=status==='rain'?'Suspendida por lluvia · se recupera':status==='cancel'?'Cancelada por el alumno · no se recupera':'Horario fijo de Mis Clases';
+  const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const privateProps={mis_clases:'1',kind:'fixed_instance',student:studentName,fixed_occurrence_id:item.fixedOccurrenceId,fixed_status:status,status_student:studentName};
+  let eventId=item.googleEventId||null,updated=false;
+  const writeEvent=async(id,kind='fixed_instance')=>{
+   const props=Object.assign({},privateProps,{kind});
+   const dtRange=googleDateTime(item.date,item.time,item.duration);
+   const body={summary,description,start:{dateTime:dtRange.start,timeZone:tz},end:{dateTime:dtRange.end,timeZone:tz},extendedProperties:{private:props}};
+   await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(body)});
+  };
+  if(eventId){
+   try{await writeEvent(eventId);updated=true}
+   catch(e){if(!['Not Found','Resource has been deleted','404','410'].some(x=>String(e.message).includes(x)))throw e;item.googleEventId=null;eventId=null}
+  }
+  if(!updated&&seriesId){
+   const startLocal=new Date(item.date+'T00:00:00'),endLocal=new Date(startLocal.getTime()+86400000);
+   const params='singleEvents=true&showDeleted=false&timeMin='+encodeURIComponent(startLocal.toISOString())+'&timeMax='+encodeURIComponent(endLocal.toISOString())+'&maxResults=20';
+   const result=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(seriesId)+'/instances?'+params,{method:'GET'});
+   const occurrence=(result.items||[]).find(ev=>String(ev.originalStartTime?.dateTime||ev.start?.dateTime||'').slice(0,10)===item.date);
+   if(occurrence){
+    const props=Object.assign({},occurrence.extendedProperties?.private||{},privateProps,{kind:'fixed',student:occurrence.extendedProperties?.private?.student||studentName});
+    const body={summary:googleStatusTitle(occurrence.summary||studentName,studentName,status),description,start:occurrence.start,end:occurrence.end,extendedProperties:{private:props}};
+    await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(occurrence.id),{method:'PUT',body:JSON.stringify(body)});
+    item.googleEventId=occurrence.id;updated=true;changed=true;
+   }
+  }
+  if(!updated){
+   const dtRange=googleDateTime(item.date,item.time,item.duration);
+   const body={summary,description,start:{dateTime:dtRange.start,timeZone:tz},end:{dateTime:dtRange.end,timeZone:tz},extendedProperties:{private:privateProps}};
+   const created=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events',{method:'POST',body:JSON.stringify(body)});
+   item.googleEventId=created.id;changed=true;
   }
  }
+ if(changed||data.fixedOverrides?.length)await setConfig('estados_clases_fijas',JSON.stringify(data.fixedOverrides||[]));
 }
 async function syncFixedSchedulesToGoogle(){
   const key='google_fixed_event_ids';
@@ -743,7 +772,7 @@ async function syncFixedSchedulesToGoogle(){
       }
     }
 
-    if(eventId){
+    const existingSeries=eventId?existingFixed.get(eventId):null;if(existingSeries?.start?.dateTime){event.start=existingSeries.start;event.end=existingSeries.end||event.end;event.recurrence=existingSeries.recurrence||event.recurrence;} if(eventId){
       try{
         await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(eventId)}`,{method:'PUT',body:JSON.stringify(event)});
       }catch(e){
@@ -1050,8 +1079,8 @@ async function setStudentClassStatus(occurrenceId,status,studentId){
   data.cancellations.push({id:newUuid(),student:x.name,date,hours:duration,note:'Cancelada por el alumno',originalClassId:fixed?null:occurrenceId,fixedOccurrenceId:fixed?occurrenceId:null,fixedStudentId:fixed?String(x.id):null,fixedTime:fixed?time:null});
  }
  if(fixed){
-  data.fixedOverrides=(data.fixedOverrides||[]).filter(v=>String(v.fixedOccurrenceId)!==String(occurrenceId));
-  data.fixedOverrides.push({id:occurrenceId,fixedOccurrenceId:occurrenceId,fixedStudentId:String(x.id),student:x.name,date,time,duration,status,note:status==='rain'?'Suspendida por lluvia':status==='cancel'?'Cancelada por el alumno':''});
+  const previousOverride=(data.fixedOverrides||[]).find(v=>String(v.fixedOccurrenceId)===String(occurrenceId));data.fixedOverrides=(data.fixedOverrides||[]).filter(v=>String(v.fixedOccurrenceId)!==String(occurrenceId));
+  data.fixedOverrides.push({...previousOverride,id:occurrenceId,fixedOccurrenceId:occurrenceId,fixedStudentId:String(x.id),student:x.name,date,time,duration,status,note:status==='rain'?'Suspendida por lluvia':status==='cancel'?'Cancelada por el alumno':'',googleEventId:previousOverride?.googleEventId||null});
  }
  await save();renderStudentDetail();renderClassesList();
 }
