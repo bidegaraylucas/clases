@@ -146,7 +146,8 @@ async function syncToSupabase(){
       const st=data.students.find(x=>x.name===c.student); if(!st) continue;
       const tipo=(c.status==='Recuperación'||c.status==='recuperacion')?'recuperacion':'individual';
       const estado=(c.status==='Lluvia'||c.status==='suspendida')?'suspendida':(c.status==='Cancelada'||c.status==='cancelada')?'cancelada':(c.status==='realizada'?'realizada':'programada');
-      const notas=c.plannedRecovery?recoveryNote(c.note,c.recoveryRainId):c.note||null;\n      const {error}=await supabaseClient.from('clases').upsert({id:c.id,alumno_id:st.id,fecha:c.date,hora:c.time||'00:00',duracion_minutos:Math.round(Number(c.duration||1)*60),tipo,estado,notas},{onConflict:'id'});
+      const notas=c.plannedRecovery?recoveryNote(c.note,c.recoveryRainId):c.note||null;
+      const {error}=await supabaseClient.from('clases').upsert({id:c.id,alumno_id:st.id,fecha:c.date,hora:c.time||'00:00',duracion_minutos:Math.round(Number(c.duration||1)*60),tipo,estado,notas},{onConflict:'id'});
       if(error) throw error;
     }
 
