@@ -105,7 +105,7 @@ const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{pers
 const GOOGLE_SCOPE='https://www.googleapis.com/auth/calendar';
 const GOOGLE_REDIRECT_URI='https://bidegaraylucas.github.io/clases/';
 const GOOGLE_TOKEN_FUNCTION=SUPABASE_URL+'/functions/v1/google-calendar-token';
-let googleToken=null; let googleCalendarId=null; let googleConnectionError=false;
+let googleToken=null; let googleCalendarId=null; let googleConnectionError=false; let googleSyncTimer=null; let googleSyncInFlight=null; let googleSyncPending=false;
 const KEY='tennisCoachV04';const monthKey=()=>new Date().toISOString().slice(0,7);const seed={students:[],classes:[],rain:[],cancellations:[],payments:[],rates:{class:12000,individual:90000,group:60000},plans:[],activities:[],fixedOverrides:[]};
 let data=JSON.parse(localStorage.getItem(KEY)||'null')||seed;if(!Array.isArray(data.activities))data.activities=[];if(!Array.isArray(data.cancellations))data.cancellations=[];if(!Array.isArray(data.fixedOverrides))data.fixedOverrides=[];
 data.students.forEach(x=>{if(x.rainHours==null)x.rainHours=0;if(x.recoveredHours==null)x.recoveredHours=0});
@@ -194,15 +194,8 @@ async function save(){
   const result=await syncToSupabase();
   if(!result.ok && result.error){ console.error(result.error); alert('No se pudo sincronizar con Supabase: '+(result.error.message||result.error)); return false; }
   localStorage.setItem(KEY,JSON.stringify(data));
-  // Queue Calendar sync after Supabase confirms the save, without keeping forms open.
-  // The server refreshes the short-lived Google access token automatically.
-  Promise.resolve().then(async()=>{
-    if(!googleCalendarId) googleCalendarId=await getConfig('google_calendar_id');
-    if(googleCalendarId) await syncAllToGoogle(true);
-  }).catch(err=>{
-    console.error('Google Calendar auto-sync:',err);
-    alert('Los cambios se guardaron en la app, pero no se pudieron sincronizar con Google Calendar: '+(err.message||err));
-  });
+  // Coalesce rapid app changes into one serialized Calendar sync.
+  queueGoogleCalendarSync();
   return true;
 }
 function money(n){return '$'+Number(n||0).toLocaleString('es-AR')}function initials(n){return n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase()}function go(id,btn){const screen=document.getElementById(id);if(!screen)return;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));screen.classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');renderAll()}function renderAll(){renderHome();renderStudents();renderClassesList();renderMoney();renderPlans()}function rainDebtRows(student){
@@ -538,11 +531,29 @@ if(type==='rain'){
 }
 if(type==='rainStudent'){let x=data.students.find(a=>a.id==id);let fixedAvailable=fixedOccurrencesRange(x.name,60);let available=[...data.classes.filter(c=>c.student===x.name&&c.status!=='Lluvia'&&c.status!=='Recuperación'),...fixedAvailable].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));s.innerHTML=`<h2>Recuperación — ${x.name}</h2><p class="sub" style="margin:6px 0 18px">Pendiente actual: <b>${pendingHours(x)} h</b></p><form class="form" onsubmit="saveRainStudent(event,'${id}')"><label>Acción<select name="action" onchange="document.getElementById('suspendClassBox').style.display=(this.value==='rain'||this.value==='cancel')?'block':'none'"><option value="rain">☂️ Suspender por lluvia (se recupera)</option><option value="cancel">❌ Cancelada por el alumno (no se recupera)</option><option value="recover">Registrar recuperación</option></select></label><div id="suspendClassBox"><label>Clase a suspender<select name="classToSuspend"><option value="">Seleccionar clase</option>${available.map(c=>`<option value="${c.id}">${c.date.split('-').reverse().join('/')} · ${c.time||''} · ${c.duration||1} h</option>`).join('')}</select></label></div><label>Horas<input type="number" name="hours" value="1" min="0.5" step="0.5" required></label><label>Fecha<input type="date" name="date" value="${new Date().toISOString().slice(0,10)}" required></label><label>Hora (si es recuperación)<input type="time" name="time"></label><label>Detalle<input name="note" placeholder="Ej. clase suspendida / recuperación"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='recoverStudent'){const x=data.students.find(a=>String(a.id)===String(id));if(!x)return;s.innerHTML='<h2>Registrar recuperación</h2><p class="sub">Pendientes por lluvia: <b>'+pendingHours(x)+' h</b></p><form class="form" onsubmit="saveStudentRecovery(event,\''+id+'\')"><label>Horas recuperadas<input type="number" name="hours" min="0.5" step="0.5" max="'+pendingHours(x)+'" value="'+Math.min(1,pendingHours(x))+'" required></label><label>Fecha<input type="date" name="date" value="'+new Date().toISOString().slice(0,10)+'" required></label><label>Hora<input type="time" name="time" required></label><label>Detalle<input name="note" placeholder="Ej. recuperación de lluvia"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar recuperación</button></div></form>'}if(type==='payment'){s.innerHTML=`<h2>Registrar pago</h2><form class="form" onsubmit="savePayment(event)"><label>Alumno<select name="student" onchange="suggestAmount(this)">${data.students.map(x=>`<option>${x.name}</option>`).join('')}</select></label><label>Tarifa<select id="ptype" name="type" onchange="suggestAmount(document.querySelector('[name=student]'))"><option value="class">Pago por clase</option><option value="individual" selected>Individual mensual</option><option value="group">Grupal mensual</option></select></label><label>Monto<input id="pamount" type="number" name="amount" value="${data.rates.individual}" required></label><label>Fecha<input type="date" name="date" value="${new Date().toISOString().slice(0,10)}" required></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='rates'){s.innerHTML=`<h2>Tarifas</h2><form class="form" onsubmit="saveRates(event)"><label>Pago por clase<input type="number" name="class" value="${data.rates.class}"></label><label>Individual mensual<input type="number" name="individual" value="${data.rates.individual}"></label><label>Grupal mensual<input type="number" name="group" value="${data.rates.group}"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='plan'){let p=id?data.plans.find(x=>String(x.id)===String(id)):null;p=p||{title:'',student:(window.currentStudentDetailId?(data.students.find(x=>String(x.id)===String(window.currentStudentDetailId))?.name||''):''),game:'',conditioned:'',task:'',regulated:'',situation:'',tactical:'',technical:'',control:'',bio:''};s.innerHTML=`<h2>${id?'Editar':'Nueva'} planificación JAJ</h2><form class="form" onsubmit="savePlan(event,'${id||''}')"><label>Alumno<select name="student"><option value="">Sin alumno</option>${data.students.map(x=>`<option value="${x.name.replace(/"/g,'&quot;')}" ${p.student===x.name?'selected':''}>${x.name}</option>`).join('')}</select></label><label>Título<input name="title" required placeholder="Ej. Fondo-fondo — mover al rival" value="${p.title||''}"></label><label>J — Juego<textarea name="game" placeholder="¿Qué juego planteo inicialmente?">${p.game||''}</textarea></label><label>A — Acondicionado<textarea name="conditioned" placeholder="Acondicionamiento relacionado al juego">${p.conditioned||''}</textarea></label><label>T — Tarea<textarea name="task" placeholder="Tarea con consigna y progresión">${p.task||''}</textarea></label><label>J — Juego regulado<textarea name="regulated" placeholder="Vuelta al juego con reglas">${p.regulated||''}</textarea></label><label>Situación<input name="situation" value="${p.situation||''}"></label><label>Objetivo táctico<input name="tactical" value="${p.tactical||''}"></label><label>Herramienta técnica<input name="technical" value="${p.technical||''}"></label><label>Elemento de control<input name="control" value="${p.control||''}"></label><label>Principio biomecánico<input name="bio" value="${p.bio||''}"></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn">Guardar</button></div></form>`}if(type==='settings'){s.innerHTML=`<h2>Ajustes</h2><div class="form" style="margin-top:18px"><label>Modo<select id="themeSelect" onchange="setTheme(this.value)"><option value="light">Claro</option><option value="dark">Oscuro</option></select></label><label>Tipografía<select id="fontSelect" onchange="setFont(this.value)"><option value="system">Sistema</option><option value="inter">Inter</option><option value="segoe">Segoe UI</option><option value="lato">Lato</option><option value="georgia">Georgia</option></select></label></div><div class="card" style="margin-top:18px"><div class="row between"><div><b>Google Calendar</b><div class="muted" id="googleCalendarStatus">Comprobando conexión…</div></div><div class="actions"><button class="btn secondary" id="googleConnectButton" onclick="connectGoogleCalendar(false)">Conectar Google</button><button class="btn secondary" onclick="clearGoogleFromSettings()">Limpiar</button><button class="btn" onclick="syncGoogleFromSettings()">Sincronizar</button></div></div><p class="sub" style="margin:10px 0 0">Conectalo una sola vez. Al volver a entrar, la app renueva la conexión automáticamente y sincroniza cada cambio con el calendario “Clases”.</p></div><p class="sub" style="margin:16px 0">Los cambios se guardan en este navegador.</p><button class="btn" onclick="closeModal()">Cerrar</button>`;document.getElementById('themeSelect').value=localStorage.getItem('mcTheme')||'light';document.getElementById('fontSelect').value=localStorage.getItem('mcFont')||'system'}}
 function closeModal(){document.getElementById('modal').classList.remove('show')}
-async function googleApi(path,options={},retry=true){if(!googleToken)await ensureGoogleAccessToken();const headers=Object.assign({'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},options.headers||{});const res=await fetch('https://www.googleapis.com/calendar/v3/'+path,Object.assign({},options,{headers}));const text=await res.text();let body={};try{body=text?JSON.parse(text):{}}catch{}if(!res.ok){if(res.status===401&&retry){googleToken=null;await refreshPersistentGoogleToken();return googleApi(path,options,false)}throw new Error(body.error?.message||('Google Calendar error '+res.status))}return body}
+function isGoogleMissingResource(error){const message=String(error?.message||error).toLowerCase();return message.includes('not found')||message.includes('resource has been deleted')||message.includes('404')||message.includes('410')}
+async function googleApi(path,options={},retryAuth=true,rateRetries=0){
+  if(!googleToken)await ensureGoogleAccessToken();
+  const headers=Object.assign({'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},options.headers||{});
+  const res=await fetch('https://www.googleapis.com/calendar/v3/'+path,Object.assign({},options,{headers}));
+  const text=await res.text();let body={};try{body=text?JSON.parse(text):{}}catch{}
+  if(!res.ok){
+    if(res.status===401&&retryAuth){googleToken=null;await refreshPersistentGoogleToken();return googleApi(path,options,false,rateRetries)}
+    const reasons=(body.error?.errors||[]).map(x=>String(x.reason||'').toLowerCase());
+    const rateLimited=res.status===429||reasons.includes('ratelimitexceeded')||reasons.includes('userratelimitexceeded');
+    if(rateLimited&&rateRetries<4){await new Promise(resolve=>setTimeout(resolve,700*Math.pow(2,rateRetries)));return googleApi(path,options,retryAuth,rateRetries+1)}
+    throw new Error(body.error?.message||('Google Calendar error '+res.status))
+  }
+  return body
+}
 async function getConfig(key){const {data,error}=await supabaseClient.from('configuracion').select('valor').eq('clave',key).maybeSingle();if(error)throw error;return data?.valor||null}
 async function setConfig(key,value){const {error}=await supabaseClient.from('configuracion').upsert({clave:key,valor:String(value)},{onConflict:'clave'});if(error)throw error}
 function updateGoogleStatus(){const el=document.getElementById('googleCalendarStatus'),button=document.getElementById('googleConnectButton');if(!el)return;if(googleConnectionError){el.textContent='No se pudo verificar la conexión. Revisá internet o renovala si persiste.';if(button)button.textContent='Reintentar conexión'}else if(googleToken){el.textContent=googleCalendarId?'Conectado · sincronización automática activa':'Conectado · se sincronizará al crear la primera clase';if(button)button.textContent='Renovar conexión'}else{el.textContent='No conectado · conectalo una vez para activar la sincronización automática';if(button)button.textContent='Conectar Google'}}
-async function syncGoogleFromSettings(){try{await syncAllToGoogle();alert('Google Calendar sincronizado.')}catch(e){alert('No se pudo sincronizar Google Calendar: '+(e.message||e))}}
+async function syncGoogleFromSettings(){
+  if(googleSyncTimer){clearTimeout(googleSyncTimer);googleSyncTimer=null}googleSyncPending=false;
+  try{if(googleSyncInFlight)await googleSyncInFlight;await syncAllToGoogle();alert('Google Calendar sincronizado.')}
+  catch(e){alert('No se pudo sincronizar Google Calendar: '+(e.message||e))}
+}
 async function clearGoogleFromSettings(){
   const ok=confirm('¿Vaciar todo y empezar de cero? Se borrarán del calendario de Google todas las clases y, de la app, todos los alumnos, clases, horarios, pagos, recuperaciones y planes. Esta acción no se puede deshacer.');
   if(!ok)return;
@@ -975,6 +986,20 @@ async function ensureGoogleAccessToken(){
   if(!ok)throw new Error('Google Calendar no está conectado.');
   return googleToken;
 }
+function queueGoogleCalendarSync(delay=1100){
+  googleSyncPending=true;
+  if(googleSyncTimer)clearTimeout(googleSyncTimer);
+  googleSyncTimer=setTimeout(runQueuedGoogleCalendarSync,delay);
+}
+async function runQueuedGoogleCalendarSync(){
+  googleSyncTimer=null;
+  if(googleSyncInFlight||!googleSyncPending)return;
+  googleSyncPending=false;
+  googleSyncInFlight=syncAllToGoogle(true);
+  try{await googleSyncInFlight}
+  catch(err){console.error('Google Calendar auto-sync:',err);alert('Los cambios se guardaron en la app, pero no se pudieron sincronizar con Google Calendar: '+(err.message||err))}
+  finally{googleSyncInFlight=null;if(googleSyncPending)queueGoogleCalendarSync(1300)}
+}
 async function syncAllToGoogle(auto=false){
   await ensureGoogleAccessToken();
   await ensureGoogleCalendar();
@@ -982,7 +1007,7 @@ async function syncAllToGoogle(auto=false){
   for(const c of data.classes)await syncClassToGoogle(c);
   await syncFixedSchedulesToGoogle();
   await syncFixedSuspensionsToGoogle();
-  try{await syncActivitiesToGoogle()}catch(e){console.warn('Google Calendar Escuelita:',e);}
+  await syncActivitiesToGoogle();
   updateGoogleStatus();
   return true
 }
