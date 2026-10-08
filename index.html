@@ -877,7 +877,7 @@ async function syncFixedSchedulesToGoogle(){
       }
     }
 
-    const existingSeries=eventId?existingFixed.get(eventId):null;if(existingSeries?.start?.dateTime){event.start=existingSeries.start;event.end=existingSeries.end||event.end;event.recurrence=existingSeries.recurrence||event.recurrence;} if(eventId){
+    const existingSeries=eventId?existingFixed.get(eventId):null;if(existingSeries?.start?.dateTime){event.start=existingSeries.start;event.end=existingSeries.end||event.end;event.recurrence=existingSeries.recurrence||event.recurrence;}const existingPrivate=existingSeries?.extendedProperties?.private||{},wantedPrivate=event.extendedProperties.private;const sameSeries=!!existingSeries&&existingSeries.summary===event.summary&&existingSeries.description===event.description&&existingSeries.start?.dateTime===event.start?.dateTime&&existingSeries.end?.dateTime===event.end?.dateTime&&JSON.stringify(existingSeries.recurrence||[])===JSON.stringify(event.recurrence||[])&&Object.entries(wantedPrivate).every(([k,v])=>String(existingPrivate[k]||'')===String(v||'')); if(eventId&&!sameSeries){
       try{
         await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(eventId)}`,{method:'PUT',body:JSON.stringify(event)});
       }catch(e){
