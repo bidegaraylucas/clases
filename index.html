@@ -387,6 +387,32 @@ function openStudentGroup(ids){
 }
 function openStudentDetail(id){window.currentStudentDetailId=String(id);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('studentDetail').classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));renderStudentDetail();}
 function backToStudents(){window.currentStudentDetailId=null;window.currentStudentGroupIds=null;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById('students').classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelector('.nav button:nth-child(2)')?.classList.add('active');renderAll();}
+function renderStudentGroupDetail(){
+ const ids=window.currentStudentGroupIds||[],members=data.students.filter(x=>ids.includes(String(x.id)));
+ if(members.length<2){window.currentStudentGroupIds=null;if(members[0]){window.currentStudentDetailId=String(members[0].id);renderStudentDetail()}else backToStudents();return}
+ members.sort((a,b)=>a.name.localeCompare(b.name,'es'));
+ const label=studentGroupLabel(members),title=document.getElementById('studentDetailTitle'),body=document.getElementById('studentDetailBody');
+ title.innerHTML='<div class="row between"><h2 style="margin:0">Grupo · '+label+'</h2><button class="btn secondary small" onclick="backToStudents()">Volver</button></div>';
+ const agendaRaw=classListOccurrences(14,60).filter(c=>ids.includes(String(c.studentId)));
+ const agendaMap=new Map();
+ for(const c of agendaRaw){const key=[c.date,String(c.time||''),Number(c.duration||1)].join('|');if(!agendaMap.has(key))agendaMap.set(key,[]);agendaMap.get(key).push(c)}
+ const agenda=[...agendaMap.values()].map(items=>{
+  const first=items[0],status=items.some(c=>c.status==='Lluvia')?'Lluvia':items.some(c=>c.status==='Cancelada')?'Cancelada':first.status;
+  return {...first,status,groupItems:items};
+ }).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+ const agendaHtml=agenda.length?agenda.map(c=>{
+  const date=new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'});
+  const state=c.status==='Lluvia'?'rain':c.status==='Cancelada'?'cancel':'normal';
+  const labelState=state==='rain'?'☂️ Lluvia':state==='cancel'?'❌ Cancelada':c.status==='Recuperación'?'Recuperación':'Normal';
+  return '<div class="agenda-class"><div class="agenda-class-info"><b>'+date+' · '+(c.time||'—')+'</b><span class="muted">'+(c.duration||1)+' h · '+labelState+' · '+label+'</span></div><select class="agenda-state" aria-label="Estado de clase grupal" onchange="setStudentClassStatus(\''+c.id+'\',this.value,\''+c.studentId+'\')"><option value="normal" '+(state==='normal'?'selected':'')+'>Normal</option><option value="rain" '+(state==='rain'?'selected':'')+'>☂️ Lluvia · recuperar</option><option value="cancel" '+(state==='cancel'?'selected':'')+'>❌ Cancelada · no recuperar</option></select></div>';
+ }).join(''):'<div class="empty">No hay clases en este período.</div>';
+ const planList=(data.plans||[]).filter(p=>String(p.student||'')===label);
+ const planHtml=planList.length?planList.map(p=>'<div class="card"><div class="row between"><b>'+p.title+'</b><button class="btn secondary small" onclick="openModal(\'plan\',\''+p.id+'\')">Editar</button></div>'+[['J — Juego',p.game],['A — Acondicionado',p.conditioned],['T — Tarea',p.task],['J — Juego regulado',p.regulated]].map(a=>'<div class="planblock"><b>'+a[0]+'</b>'+(a[1]||'')+'</div>').join('')+'</div>').join(''):'<div class="card empty">Todavía no hay una planificación para este grupo.</div>';
+ body.innerHTML='<div class="sectionhead"><div><h2>Integrantes</h2><div class="sub">Las clases y la planificación se comparten; cada pago sigue siendo individual.</div></div></div>'+
+ members.map(x=>'<div class="card"><div class="row between"><div><b>'+x.name+'</b><div class="muted">'+money(x.price||0)+' · '+(x.tariff==='group'?'Tarifa grupal':'Tarifa individual')+'</div></div><div class="actions" style="margin:0"><span class="badge '+(x.paid?'':'red')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><button class="btn small" onclick="togglePaid(\''+x.id+'\');renderStudentGroupDetail()">'+(x.paid?'Marcar pendiente':'Me pagó')+'</button><button class="btn secondary small" onclick="openStudentDetail(\''+x.id+'\')">Perfil</button></div></div></div>').join('')+
+ '<div class="sectionhead agenda-heading"><div><h2>Agenda grupal</h2><div class="sub">Una sola suspensión para todos los integrantes.</div></div><button class="btn small" onclick="openModal(\'class\',\''+members[0].id+'\')">+ Clase</button></div><div class="card agenda-list">'+agendaHtml+'</div>'+
+ '<div class="sectionhead" style="margin-top:18px"><h2>Planificación</h2><button class="btn small" onclick="openModal(\'plan\')">+ Plan</button></div>'+planHtml;
+}
 function renderStudentDetail(){
  if(window.currentStudentGroupIds?.length){renderStudentGroupDetail();return}
  const id=String(window.currentStudentDetailId||''),x=data.students.find(a=>String(a.id)===id),title=document.getElementById('studentDetailTitle'),body=document.getElementById('studentDetailBody');
@@ -1298,7 +1324,11 @@ async function saveRainGeneral(e){
   closeModal(); await save();
 }
 async function saveRainStudent(e,id){e.preventDefault();let v=vals(e.target),x=data.students.find(a=>a.id==id),h=Number(v.hours||0);if(!x)return;if(v.action==='rain'||v.action==='cancel'){const selectedId=v.classToSuspend;const isFixed=String(selectedId||'').startsWith('fixed-');const original=isFixed?null:(selectedId?data.classes.find(c=>String(c.id)===String(selectedId)):null);let occDate=v.date,occTime='';if(isFixed){const parts=String(selectedId).split('-');occDate=parts.slice(-3).join('-');const f=x.fixedSchedule||{};const schedules=Array.isArray(f)?f:f.active?[f]:[];const idx=Number(parts[parts.length-4]);occTime=schedules[idx]?.time||'';}else if(original){occDate=original.date;occTime=original.time||'';}if(v.action==='rain'){x.rainHours=Number(x.rainHours||0)+h;const rainId=newUuid();data.rain.push({id:rainId,student:x.name,date:occDate,hours:h,note:v.note||'Suspensión por lluvia',recoveryId:null,originalClassId:original?.id||null,fixedOccurrenceId:isFixed?selectedId:null,fixedStudentId:isFixed?String(x.id):null,fixedTime:isFixed?occTime:null});if(original){original.status='Lluvia';original.note=(original.note?original.note+' · ':'')+'Suspendida por lluvia';original.rainSuspensionId=rainId;}}else{const cancelId=newUuid();data.cancellations.push({id:cancelId,student:x.name,date:occDate,hours:h,note:v.note||'Cancelada por el alumno',originalClassId:original?.id||null,fixedOccurrenceId:isFixed?selectedId:null,fixedStudentId:isFixed?String(x.id):null,fixedTime:isFixed?occTime:null});if(original){original.status='Cancelada';original.note=(original.note?original.note+' · ':'')+'Cancelada por el alumno';}}}else{x.recoveredHours=Math.min(Number(x.rainHours||0),Number(x.recoveredHours||0)+h);data.classes.push({id:newUuid(),student:x.name,date:v.date,time:v.time||'',duration:h,status:'Recuperación',classType:x.tariff==='group'?'group':'individual',note:v.note||'Recuperación'});}closeModal();await save()}
-async function setStudentClassStatus(occurrenceId,status,studentId){
+function fixedScheduleIndexFor(st,date,time,duration){
+ const dt=new Date(date+'T12:00:00'),day=(dt.getDay()+6)%7;
+ return studentSchedules(st).findIndex(f=>f?.active&&String(f.time||'').slice(0,5)===String(time||'').slice(0,5)&&Number(f.duration||1)===Number(duration||1)&&(Array.isArray(f.days)?f.days.map(Number):[Number(f.day)]).includes(day));
+}
+function applyStudentClassStatus(occurrenceId,status,studentId){
  const fixed=String(occurrenceId).startsWith('fixed-'),x=data.students.find(a=>String(a.id)===String(studentId));
  if(!x)return;
  const c=fixed?null:data.classes.find(a=>String(a.id)===String(occurrenceId));if(!fixed&&!c)return;
@@ -1309,8 +1339,8 @@ async function setStudentClassStatus(occurrenceId,status,studentId){
  let date=c?.date||'',time=c?.time||'',duration=Number(c?.duration||1);
  if(fixed){
   const parts=String(occurrenceId).split('-');date=parts.slice(-3).join('-');
-  const idx=Number(parts[parts.length-4]),schedules=Array.isArray(x.fixedSchedule)?x.fixedSchedule:(x.fixedSchedule?.active?[x.fixedSchedule]:[]),schedule=schedules[idx];
-  if(!schedule){alert('No encontré el horario semanal de esta clase.');return}
+  const idx=Number(parts[parts.length-4]),schedule=studentSchedules(x)[idx];
+  if(!schedule)return;
   time=schedule.time||'';duration=Number(schedule.duration||1);
  }
  if(c){
@@ -1327,9 +1357,29 @@ async function setStudentClassStatus(occurrenceId,status,studentId){
   const previousOverride=(data.fixedOverrides||[]).find(v=>String(v.fixedOccurrenceId)===String(occurrenceId));data.fixedOverrides=(data.fixedOverrides||[]).filter(v=>String(v.fixedOccurrenceId)!==String(occurrenceId));
   data.fixedOverrides.push({...previousOverride,id:occurrenceId,fixedOccurrenceId:occurrenceId,fixedStudentId:String(x.id),student:x.name,date,time,duration,status,note:status==='rain'?'Suspendida por lluvia':status==='cancel'?'Cancelada por el alumno':'',googleEventId:previousOverride?.googleEventId||null});
  }
- await save();renderStudentDetail();renderClassesList();
 }
-async function saveStudentRecovery(e,id){e.preventDefault();const v=vals(e.target),x=data.students.find(a=>String(a.id)===String(id));if(!x)return;const hours=Number(v.hours||0),pending=pendingHours(x);if(hours<=0||hours>pending){alert('Las horas deben ser mayores a cero y no pueden superar las pendientes.');return}applyRainRecovery(x,null,hours);x.recoveredHours=Number(x.recoveredHours||0)+hours;data.classes.push({id:newUuid(),student:x.name,date:v.date,time:v.time,duration:hours,status:'Recuperación',classType:x.tariff==='group'?'group':'individual',note:v.note||'Recuperación de lluvia'});closeModal();await save();renderStudentDetail()} function togglePaid(id){const x=data.students.find(a=>a.id==id);if(!x)return;x.paid=!x.paid;if(x.paid){const existing=data.payments.some(p=>p.student===x.name&&Number(p.amount)===Number(x.price)&&p.type===x.tariff);if(!existing){data.payments.push({id:Date.now(),student:x.name,amount:Number(x.price),type:x.tariff||'individual',date:new Date().toISOString().slice(0,10)});}}else{const idx=[...data.payments].map((p,i)=>[p,i]).reverse().find(([p])=>p.student===x.name&&Number(p.amount)===Number(x.price));if(idx)data.payments.splice(idx[1],1);}save()}function savePayment(e){e.preventDefault();let v=vals(e.target);data.payments.push({id:Date.now(),student:v.student,amount:Number(v.amount),type:v.type,date:v.date});let x=data.students.find(a=>a.name===v.student);if(x)x.paid=true;closeModal();save()}function suggestAmount(){let t=document.getElementById('ptype')?.value;if(document.getElementById('pamount'))document.getElementById('pamount').value=data.rates[t==='class'?'class':t==='group'?'group':'individual']}function saveRates(e){e.preventDefault();let v=vals(e.target);data.rates={class:Number(v.class),individual:Number(v.individual),group:Number(v.group)};closeModal();save()}function savePlan(e,id){e.preventDefault();const v=vals(e.target);if(id){const p=data.plans.find(x=>String(x.id)===String(id));if(p)Object.assign(p,v)}else data.plans.push({id:Date.now(),...v});closeModal();save()}function deletePlan(id){data.plans=data.plans.filter(x=>x.id!=id);save()}function setTheme(v){document.body.classList.toggle('dark',v==='dark');localStorage.setItem('mcTheme',v)}function setFont(v){if(v==='avenir')v='lato';document.body.classList.remove('font-system','font-inter','font-segoe','font-lato','font-avenir','font-georgia');document.body.classList.add('font-'+v);localStorage.setItem('mcFont',v)}function loadAppearance(){setTheme(localStorage.getItem('mcTheme')||'light');setFont(localStorage.getItem('mcFont')||'system')}function resetData(){if(confirm('¿Restaurar datos de ejemplo?')){localStorage.removeItem(KEY);location.reload()}}loadAppearance();
+async function setStudentClassStatus(occurrenceId,status,studentId){
+ const fixed=String(occurrenceId).startsWith('fixed-'),x=data.students.find(a=>String(a.id)===String(studentId));
+ if(!x)return;
+ const targets=[{id:String(x.id),occurrenceId:String(occurrenceId)}];
+ if(fixed&&x.tariff==='group'){
+  const parts=String(occurrenceId).split('-'),date=parts.slice(-3).join('-'),idx=Number(parts[parts.length-4]),schedule=studentSchedules(x)[idx];
+  if(schedule){
+   const day=(new Date(date+'T12:00:00').getDay()+6)%7,signature=studentGroupSignature(x);
+   if(signature){
+    for(const member of data.students.filter(st=>st.id!==x.id&&studentGroupSignature(st)===signature)){
+     const memberIdx=fixedScheduleIndexFor(member,date,schedule.time,schedule.duration);
+     if(memberIdx>=0)targets.push({id:String(member.id),occurrenceId:`fixed-${member.id}-${memberIdx}-${date}`});
+    }
+   }
+  }
+ }
+ for(const target of targets)applyStudentClassStatus(target.occurrenceId,status,target.id);
+ await save();
+ if(window.currentStudentGroupIds?.length)renderStudentGroupDetail();else renderStudentDetail();
+ renderClassesList();renderStudents();
+}
+async function saveStudentRecovery(e,id){e.preventDefault();const v=vals(e.target),x=data.students.find(a=>String(a.id)===String(id));if(!x)return;const hours=Number(v.hours||0),pending=pendingHours(x);if(hours<=0||hours>pending){alert('Las horas deben ser mayores a cero y no pueden superar las pendientes.');return}applyRainRecovery(x,null,hours);x.recoveredHours=Number(x.recoveredHours||0)+hours;data.classes.push({id:newUuid(),student:x.name,date:v.date,time:v.time,duration:hours,status:'Recuperación',classType:x.tariff==='group'?'group':'individual',note:v.note||'Recuperación de lluvia'});closeModal();await save();renderStudentDetail()} function togglePaid(id){const x=data.students.find(a=>a.id==id);if(!x)return;x.paid=!x.paid;if(x.paid){const existing=data.payments.some(p=>p.student===x.name&&Number(p.amount)===Number(x.price)&&p.type===x.tariff);if(!existing){data.payments.push({id:Date.now(),student:x.name,amount:Number(x.price),type:x.tariff||'individual',date:new Date().toISOString().slice(0,10)});}}else{const idx=[...data.payments].map((p,i)=>[p,i]).reverse().find(([p])=>p.student===x.name&&Number(p.amount)===Number(x.price));if(idx)data.payments.splice(idx[1],1);}save()}function savePayment(e){e.preventDefault();let v=vals(e.target);data.payments.push({id:Date.now(),student:v.student,amount:Number(v.amount),type:v.type,date:v.date});let x=data.students.find(a=>a.name===v.student);if(x)x.paid=true;closeModal();save()}function suggestAmount(){let t=document.getElementById('ptype')?.value;if(document.getElementById('pamount'))document.getElementById('pamount').value=data.rates[t==='class'?'class':t==='group'?'group':'individual']}function saveRates(e){e.preventDefault();let v=vals(e.target);data.rates={class:Number(v.class),individual:Number(v.individual),group:Number(v.group)};closeModal();save()}async function savePlan(e,id){e.preventDefault();const v=vals(e.target);if(id){const p=data.plans.find(x=>String(x.id)===String(id));if(p)Object.assign(p,v)}else data.plans.push({id:Date.now(),...v});closeModal();await save();if(window.currentStudentGroupIds?.length)renderStudentGroupDetail();else if(window.currentStudentDetailId)renderStudentDetail()}function deletePlan(id){data.plans=data.plans.filter(x=>x.id!=id);save()}function setTheme(v){document.body.classList.toggle('dark',v==='dark');localStorage.setItem('mcTheme',v)}function setFont(v){if(v==='avenir')v='lato';document.body.classList.remove('font-system','font-inter','font-segoe','font-lato','font-avenir','font-georgia');document.body.classList.add('font-'+v);localStorage.setItem('mcFont',v)}function loadAppearance(){setTheme(localStorage.getItem('mcTheme')||'light');setFont(localStorage.getItem('mcFont')||'system')}function resetData(){if(confirm('¿Restaurar datos de ejemplo?')){localStorage.removeItem(KEY);location.reload()}}loadAppearance();
 const authGate=document.getElementById('authGate'),authForm=document.getElementById('authForm'),authError=document.getElementById('authError'),authLoading=document.getElementById('authLoading');
 function showAuthError(msg){authError.textContent=msg;authError.style.display='block'}
 function hideAuthError(){authError.textContent='';authError.style.display='none'}
