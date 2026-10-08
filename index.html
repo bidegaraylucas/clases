@@ -543,7 +543,27 @@ async function getConfig(key){const {data,error}=await supabaseClient.from('conf
 async function setConfig(key,value){const {error}=await supabaseClient.from('configuracion').upsert({clave:key,valor:String(value)},{onConflict:'clave'});if(error)throw error}
 function updateGoogleStatus(){const el=document.getElementById('googleCalendarStatus'),button=document.getElementById('googleConnectButton');if(!el)return;if(googleConnectionError){el.textContent='No se pudo verificar la conexión. Revisá internet o renovala si persiste.';if(button)button.textContent='Reintentar conexión'}else if(googleToken){el.textContent=googleCalendarId?'Conectado · sincronización automática activa':'Conectado · se sincronizará al crear la primera clase';if(button)button.textContent='Renovar conexión'}else{el.textContent='No conectado · conectalo una vez para activar la sincronización automática';if(button)button.textContent='Conectar Google'}}
 async function syncGoogleFromSettings(){try{await syncAllToGoogle();alert('Google Calendar sincronizado.')}catch(e){alert('No se pudo sincronizar Google Calendar: '+(e.message||e))}}
-async function clearGoogleFromSettings(){try{const r=await resetGoogleCalendars();await ensureGoogleCalendar();alert(`Google Calendar limpiado. ${Number(r.deletedCalendars||0)} calendario(s) viejo(s) y ${Number(r.deletedEvents||0)} evento(s) eliminado(s). Queda un único “Clases” vacío.`);updateGoogleStatus()}catch(e){alert('No se pudo limpiar Google Calendar: '+(e.message||e))}}
+async function clearGoogleFromSettings(){
+  const ok=confirm('¿Vaciar todo y empezar de cero? Se borrarán del calendario de Google todas las clases y, de la app, todos los alumnos, clases, horarios, pagos, recuperaciones y planes. Esta acción no se puede deshacer.');
+  if(!ok)return;
+  try{
+    const calendarResult=await resetGoogleCalendars();
+    for(const table of ['recuperaciones','clases','horarios_fijos','pagos','trabajos_tecnicos','planes','alumnos']){
+      const {error}=await supabaseClient.from(table).delete().not('id','is',null);
+      if(error)throw error;
+    }
+    const keys=['actividades_recurrentes','cancelaciones_alumno','estados_clases_fijas','google_activity_event_ids','google_calendar_id','google_clear_requested','google_fixed_event_ids','suspensiones_lluvia'];
+    const {error:configError}=await supabaseClient.from('configuracion').delete().in('clave',keys);
+    if(configError)throw configError;
+    data={students:[],classes:[],rain:[],cancellations:[],payments:[],rates:{class:12000,individual:90000,group:60000},plans:[],activities:[],fixedOverrides:[]};
+    localStorage.setItem(KEY,JSON.stringify(data));
+    const saved=await syncToSupabase();
+    if(!saved.ok)throw saved.error||new Error('No se pudieron guardar los cambios en la app.');
+    await syncAllToGoogle();
+    renderAll();closeModal();updateGoogleStatus();
+    alert(`Listo: alumnos y datos de la app borrados; Google Calendar quedó vacío con un calendario “Clases” nuevo. Se quitaron ${Number(calendarResult.deletedCalendars||0)} calendarios y ${Number(calendarResult.deletedEvents||0)} eventos.`);
+  }catch(e){console.error('Error al vaciar app y calendario:',e);alert('La limpieza quedó incompleta: '+(e.message||e)+'. Revisá la app y volvé a intentar si hace falta.')}
+}
 async function clearGoogleCalendarIfRequested(){
   try{
     const flag=await getConfig('google_clear_requested');
