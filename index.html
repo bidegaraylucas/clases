@@ -1503,7 +1503,13 @@ async function handleGoogleOAuthCallback(){
   if(!code&&!error)return false;
   if(error)throw new Error('Google canceló la conexión: '+error);
   let expected=null;try{expected=sessionStorage.getItem('google_oauth_state')||localStorage.getItem('google_oauth_state')}catch{}
-  if(!state||!expected||state!==expected)throw new Error('No se pudo validar la conexión con Google. Iniciá la conexión otra vez desde este mismo navegador.');
+  if(!state||!expected||state!==expected){
+    // En móviles puede volver un callback viejo tras restaurar una sesión ya válida.
+    // No intercambiar un código sin estado válido; si la conexión persistente ya se renovó, ignorar el callback obsoleto sin mostrar un error falso.
+    window.history.replaceState({},document.title,window.location.pathname);
+    if(googleToken){googleConnectionError=false;updateGoogleStatus();return false}
+    throw new Error('No se pudo validar la conexión con Google. Iniciá la conexión otra vez desde este mismo navegador.');
+  }
   const data=await googleTokenFunction({action:'exchange',code,redirect_uri:GOOGLE_REDIRECT_URI});
   try{sessionStorage.removeItem('google_oauth_state')}catch{}try{localStorage.removeItem('google_oauth_state')}catch{}
   googleToken=data.access_token||null;googleConnectionError=false;
