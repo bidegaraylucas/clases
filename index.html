@@ -167,7 +167,7 @@ body.theme-custom-dark.theme-pastel-lightbar .search{color:#344238!important}
 /* Navegación inferior: cada destino se percibe como un botón */
 .bottom{padding-top:5px!important}
 .nav{gap:8px;padding:0 10px}
-.nav button{margin:4px 0!important;min-height:54px;padding:7px 8px!important;border:1px solid var(--line)!important;border-radius:13px;background:var(--card)!important;transition:border-color .15s,transform .15s,box-shadow .15s}
+.nav button{margin:4px 0!important;min-height:54px;padding:7px 8px!important;border:1px solid var(--line)!important;border-radius:13px;background:var(--card)!important;transition:border-color .15s,transform .15s,box-shadow .15s}.nav button{background:var(--bar,var(--card))!important}body.theme-custom-dark .nav button{background:var(--bar,var(--card))!important;border-color:var(--bold-text)!important}
 .nav button.active{border-color:var(--blue)!important;box-shadow:0 2px 8px rgba(20,31,55,.10)}
 .nav button:active{transform:scale(.97)}
 body.theme-custom-dark .nav button.active{border-color:var(--bold-text)!important}
@@ -1325,7 +1325,7 @@ async function connectGoogleCalendar(force=false){
     }
     const clientId=await getGoogleClientId();
     const state=crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random();
-    sessionStorage.setItem('google_oauth_state',state);
+    try{sessionStorage.setItem('google_oauth_state',state)}catch{}try{localStorage.setItem('google_oauth_state',state)}catch{}
     const params=new URLSearchParams({client_id:clientId,redirect_uri:GOOGLE_REDIRECT_URI,response_type:'code',scope:GOOGLE_SCOPE,access_type:'offline',prompt:'consent',include_granted_scopes:'false',state});
     window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+params.toString();
   }catch(e){console.error(e);alert('No se pudo iniciar la reconexión de Google Calendar: '+(e.message||e))}
@@ -1337,10 +1337,10 @@ async function handleGoogleOAuthCallback(){
   const error=params.get('error');
   if(!code&&!error)return false;
   if(error)throw new Error('Google canceló la conexión: '+error);
-  const expected=sessionStorage.getItem('google_oauth_state');
-  if(!state||!expected||state!==expected)throw new Error('No se pudo validar la conexión con Google.');
-  sessionStorage.removeItem('google_oauth_state');
+  let expected=null;try{expected=sessionStorage.getItem('google_oauth_state')||localStorage.getItem('google_oauth_state')}catch{}
+  if(!state||!expected||state!==expected)throw new Error('No se pudo validar la conexión con Google. Iniciá la conexión otra vez desde este mismo navegador.');
   const data=await googleTokenFunction({action:'exchange',code,redirect_uri:GOOGLE_REDIRECT_URI});
+  try{sessionStorage.removeItem('google_oauth_state')}catch{}try{localStorage.removeItem('google_oauth_state')}catch{}
   googleToken=data.access_token||null;googleConnectionError=false;
   if(data.calendar_id)googleCalendarId=data.calendar_id;
   window.history.replaceState({},document.title,window.location.pathname);
