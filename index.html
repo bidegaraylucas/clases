@@ -195,7 +195,7 @@ body.dark .bottom{box-shadow:0 8px 26px rgba(0,0,0,.38)!important}
 .debt-summary>span{display:grid;gap:4px}
 .debt-hours{color:#e65b67}
 .week-toolbar{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:12px 0}
-.week-toolbar #classWeekTitle{text-transform:capitalize}
+.week-toolbar #classWeekTitle{text-transform:none}
 .week-toolbar #classWeekRange{font-size:12px}
 .week-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 .week-day{display:grid;justify-items:center;gap:4px;min-width:0;padding:9px 3px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text);cursor:pointer;font:inherit}
@@ -203,7 +203,7 @@ body.dark .bottom{box-shadow:0 8px 26px rgba(0,0,0,.38)!important}
 .week-day b{font-size:16px}
 .week-day.active{background:var(--card);border-color:var(--blue);color:var(--text);box-shadow:inset 0 -3px var(--blue)}
 .week-day.active span,.week-day.active small{color:inherit;opacity:.9}
-.selected-day-title{text-transform:capitalize;margin-top:21px}
+.selected-day-title{text-transform:none;margin-top:21px}
 .class-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .class-row-main{min-width:0}
 .class-student-name{margin-top:5px}
@@ -564,13 +564,13 @@ function renderClassesList(){
  const list=document.getElementById('classWeekList');if(!list)return;
  const title=document.getElementById('classWeekTitle'),range=document.getElementById('classWeekRange'),daysHost=document.getElementById('classWeekDays'),dayTitle=document.getElementById('classWeekDayTitle');
  const start=new Date(classWeekStart),end=new Date(start);end.setDate(end.getDate()+6);
- if(title)title.textContent=start.toLocaleDateString('es-AR',{month:'long',year:'numeric'});
+ if(title){const monthLabel=start.toLocaleDateString('es-AR',{month:'long',year:'numeric'});title.textContent=monthLabel.charAt(0).toUpperCase()+monthLabel.slice(1)}
  if(range)range.textContent=`${start.toLocaleDateString('es-AR',{day:'numeric',month:'short'})} — ${end.toLocaleDateString('es-AR',{day:'numeric',month:'short'})}`;
  const items=weekClasses(),dayNames=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
  if(!items.some(c=>c.date===classWeekSelected))classWeekSelected=weekDateKey(new Date(Math.max(start.getTime(),Math.min(end.getTime(),new Date(classWeekSelected+'T12:00:00').getTime()))));
  if(daysHost)daysHost.innerHTML=Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(d.getDate()+i);const date=weekDateKey(d),count=items.filter(c=>c.date===date).length;return '<button type="button" class="week-day '+(date===classWeekSelected?'active':'')+'" onclick="selectClassWeekDay(\''+date+'\')"><span>'+dayNames[i]+'</span><b>'+d.getDate()+'</b><small>'+count+' '+(count===1?'clase':'clases')+'</small></button>'}).join('');
  const dayItems=items.filter(c=>c.date===classWeekSelected);
- if(dayTitle)dayTitle.textContent=new Date(classWeekSelected+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+ if(dayTitle){const dayLabel=new Date(classWeekSelected+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'}).replace(',','');dayTitle.textContent=dayLabel.charAt(0).toUpperCase()+dayLabel.slice(1)}
  list.innerHTML=dayItems.length?dayItems.map(c=>'<div class="card class-row"><div class="class-row-main"><div class="row" style="gap:8px"><b>'+escapePlanText(c.time||'—')+'</b>'+classStatusBadge(c)+'</div><div class="class-student-name"><b>'+escapePlanText(c.student||'—')+'</b></div><div class="muted">'+Number(c.duration||1)+' h'+(c.note?' · '+escapePlanText(c.note):'')+'</div></div><div class="actions week-class-actions" style="margin:0">'+classActionButtons(c)+'</div></div>').join(''):'<div class="card empty">No hay clases para este día.</div>';
 }
 function studentWeekSort(student){const raw=student.fixedSchedule||[],schedules=Array.isArray(raw)?raw:(raw.active?[raw]:[]);let slots=[];for(const s of schedules){if(!s||s.active===false||!s.time)continue;const days=Array.isArray(s.days)?s.days:[s.day];for(const d of days){const day=Number(d);if(Number.isInteger(day)&&day>=0&&day<=6)slots.push({day,time:String(s.time)})}}slots.sort((a,b)=>a.day-b.day||a.time.localeCompare(b.time));return slots[0]||{day:7,time:'99:99'}}function studentSchedules(st){const raw=st?.fixedSchedule;return Array.isArray(raw)?raw:(raw?.active?[raw]:[])}
