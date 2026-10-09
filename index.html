@@ -444,11 +444,25 @@ function openRainDebtOverview(studentId){
    const time=item.time||'Hora sin registrar';
    const scheduledText=item.scheduled?.length?item.scheduled.map(c=>new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})+(c.time?' · '+c.time:'')).join(', '):'';
    const statusText=scheduledText?' · Programada para recuperar '+scheduledText:'';
-   const action=item.availableHours>0?'<button class="btn small" onclick="openRainRecovery(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Registrar recuperación</button>':'<span class="badge blue">Programada</span>';
+   const action='<div class="actions recovery-actions" style="margin:0">'+(item.availableHours>0?'<button class="btn small" onclick="openRainRecovery(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Programar</button>':'')+(item.scheduled||[]).map(c=>'<button class="btn secondary small" onclick="editScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;)">Cambiar fecha</button>').join('')+'</div>';
    return '<div class="card debt-item"><div><b>'+date+' · '+time+'</b><div class="muted">'+item.hours+' h pendientes'+(entry.group?' · una sola recuperación para el grupo':'')+statusText+'</div></div>'+action+'</div>';
   }).join('')+'</div>';
  }).join('');
  sheet.innerHTML='<div class="row between"><div><h2>Horas por recuperar</h2><div class="sub">Solo suspensiones por lluvia pendientes.</div></div><button class="btn secondary small" onclick="closeModal()">Cerrar</button></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
+}
+function editScheduledRecovery(classId,studentId){
+ const recovery=data.classes.find(c=>String(c.id)===String(classId)&&c.plannedRecovery);
+ if(!recovery)return;
+ const student=data.students.find(x=>String(x.id)===String(studentId));
+ const sheet=document.getElementById('sheet');document.getElementById('modal').classList.add('show');
+ sheet.innerHTML='<h2>Modificar recuperación</h2><p class="sub">'+(student?'Recuperación de '+escapePlanText(student.name)+'. ':'')+'Al guardar, se actualizará el mismo evento en Google Calendar.</p><form class="form" onsubmit="saveScheduledRecoveryDate(event)"><input type="hidden" name="classId" value="'+escapePlanText(recovery.id)+'"><input type="hidden" name="studentId" value="'+escapePlanText(studentId||student?.id||'')+'"><label>Nueva fecha<input type="date" name="date" value="'+escapePlanText(recovery.date||weekDateKey(new Date()))+'" required></label><label>Hora<input type="time" name="time" value="'+escapePlanText(recovery.time||'')+'" required></label><div class="actions"><button type="button" class="btn secondary" onclick="openRainDebtOverview(&quot;'+escapePlanText(studentId||student?.id||'')+'&quot;)">Cancelar</button><button class="btn">Guardar cambio</button></div></form>';
+}
+async function saveScheduledRecoveryDate(e){
+ e.preventDefault();const v=vals(e.target),recovery=data.classes.find(c=>String(c.id)===String(v.classId)&&c.plannedRecovery);
+ if(!recovery||!v.date||!v.time)return;
+ recovery.date=v.date;recovery.time=v.time;
+ await save();
+ openRainDebtOverview(v.studentId);
 }
 function openRainRecovery(studentId,rainId){
  const student=data.students.find(x=>String(x.id)===String(studentId));if(!student)return;
