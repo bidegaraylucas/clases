@@ -468,10 +468,14 @@ async function saveScheduledRecoveryDate(e){
  const student=data.students.find(x=>String(x.id)===String(v.studentId)),members=student?studentGroupMembers(student):[],rows=members.length>1?groupRainDebtRows(members):student?rainDebtRows(student):[],item=rows.find(x=>String(x.id)===String(v.rainId)),maxHours=Number(recovery.duration||1)+Number(item?.availableHours||0);
  if(hours<0.5||Math.abs(hours*2-Math.round(hours*2))>1e-8||hours>maxHours){alert('La duración debe ser de al menos 30 minutos, en bloques de media hora, y no superar las horas pendientes.');return}
  recovery.date=v.date;recovery.time=v.time;recovery.duration=hours;
- const saved=await save();if(saved===false)return;
- closeModal();
- const pending=localStorage.getItem(GOOGLE_SYNC_PENDING_KEY)==='1';
- showSaveNotice(pending?'Cambio guardado. Calendar quedó pendiente de sincronizar y se reintentará automáticamente.':'Recuperación actualizada y sincronizada con Calendar.');
+ closeModal();showSaveNotice('Guardando el cambio…');
+ try{
+  const saved=await save();
+  if(saved===false){showSaveNotice('No se pudo confirmar el guardado. Revisá la conexión e intentá de nuevo.');return}
+  const pending=localStorage.getItem(GOOGLE_SYNC_PENDING_KEY)==='1';
+  showSaveNotice(pending?'Cambio guardado. Calendar quedó pendiente de sincronizar y se reintentará automáticamente.':'Recuperación actualizada y sincronizada con Calendar.');
+ }catch(error){console.error('No se pudo guardar la recuperación:',error);showSaveNotice('No se pudo completar el guardado. Revisá la conexión e intentá de nuevo.')}
+
 }
 function showSaveNotice(message){
  let notice=document.getElementById('saveNotice');
