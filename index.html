@@ -291,6 +291,7 @@ function recoveryEndTime(c){
  return new Date(start.getTime()+Math.max(0,Number(c.duration||0))*3600000);
 }
 function isRecoveryCompleted(c,now=new Date()){
+ if(!(now instanceof Date))now=new Date();
  if(!c?.plannedRecovery||!c.date)return false;
  const end=recoveryEndTime(c);
  return end?now.getTime()>=end.getTime():c.date<localDateKey();
@@ -400,7 +401,7 @@ function money(n){return '$'+Number(n||0).toLocaleString('es-AR')}function initi
   const scheduledClass=data.classes.find(c=>String(c.id)===String(r.originalClassId||''))||data.classes.find(c=>c.student===student.name&&c.date===r.date&&c.status==='Lluvia');
   const hours=Number(r.hours||0),explicit=Number(r.recoveredHours||0),oldAllocation=Math.min(Math.max(0,hours-explicit),legacy);
   legacy-=oldAllocation;
-  const scheduled=scheduledRecoveriesForRain(r.id),completed=scheduled.filter(isRecoveryCompleted).reduce((sum,c)=>sum+Number(c.duration||0),0);
+  const scheduled=scheduledRecoveriesForRain(r.id),completed=scheduled.filter(c=>isRecoveryCompleted(c)).reduce((sum,c)=>sum+Number(c.duration||0),0);
   const remaining=Math.min(Math.max(0,hours-explicit-oldAllocation-completed),Math.max(0,pendingHours(student)-total));total+=remaining;
   const future=scheduled.filter(c=>!isRecoveryCompleted(c));
   const reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
@@ -432,7 +433,7 @@ function groupRainDebtRows(members){
  }
  return [...grouped.values()].map(entries=>{
   const main=entries.find(x=>String(x.record.student||'')===String(primary.name))||entries[0];
-  const scheduled=scheduledRecoveriesForRain(main.record.id),completed=scheduled.filter(isRecoveryCompleted).reduce((sum,c)=>sum+Number(c.duration||0),0);
+  const scheduled=scheduledRecoveriesForRain(main.record.id),completed=scheduled.filter(c=>isRecoveryCompleted(c)).reduce((sum,c)=>sum+Number(c.duration||0),0);
   const hours=Math.max(0,Math.max(...entries.map(x=>x.remaining))-completed),future=scheduled.filter(c=>!isRecoveryCompleted(c)),reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
   return {id:main.record.id||('rain-'+primary.id+'-'+entries[0].record.date),recordId:main.record.id||null,date:main.record.date||'',time:main.record.fixedTime||main.record.time||'',hours,availableHours:Math.max(0,hours-reserved),scheduled:future,source:main.record,groupMembers:members,groupRows:entries};
  }).filter(x=>x.hours>0).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.time).localeCompare(String(b.time)));
