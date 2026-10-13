@@ -281,9 +281,23 @@ data.students.forEach(x=>{if(x.rainHours==null)x.rainHours=0;if(x.recoveredHours
 
 data.classes.forEach(x=>{if(x.duration==null)x.duration=1;if(x.type==null)x.type='Normal';if(x.rain==null)x.rain=false});
 function localDateKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function recoveryEndTime(c){
+ if(!c?.date)return null;
+ const dateMatch=String(c.date).match(/^(\d{4})-(\d{2})-(\d{2})$/),timeMatch=String(c.time||'').match(/^(\d{1,2}):(\d{2})$/);
+ if(!dateMatch||!timeMatch)return null;
+ const [,year,month,day]=dateMatch,[,hour,minute]=timeMatch;
+ const start=new Date(Number(year),Number(month)-1,Number(day),Number(hour),Number(minute));
+ if(start.getFullYear()!==Number(year)||start.getMonth()!==Number(month)-1||start.getDate()!==Number(day)||start.getHours()!==Number(hour)||start.getMinutes()!==Number(minute))return null;
+ return new Date(start.getTime()+Math.max(0,Number(c.duration||0))*3600000);
+}
+function isRecoveryCompleted(c,now=new Date()){
+ if(!c?.plannedRecovery||!c.date)return false;
+ const end=recoveryEndTime(c);
+ return end?now.getTime()>=end.getTime():c.date<localDateKey();
+}
 function scheduledRecoveriesForRain(rainId){return (data.classes||[]).filter(c=>c.plannedRecovery&&String(c.recoveryRainId||'')===String(rainId));}
 function recoveryNote(note,rainId){return `${note||'Recuperación de lluvia'}\n[[recuperacion-programada:${rainId}]]`;}
-function pendingHours(x){const completed=(data.classes||[]).filter(c=>c.plannedRecovery&&c.date<localDateKey()&&c.student===x.name).reduce((sum,c)=>sum+Number(c.duration||0),0);return Math.max(0,Number(x.rainHours||0)-Number(x.recoveredHours||0)-completed);}
+function pendingHours(x){const completed=(data.classes||[]).filter(c=>c.student===x.name&&isRecoveryCompleted(c)).reduce((sum,c)=>sum+Number(c.duration||0),0);return Math.max(0,Number(x.rainHours||0)-Number(x.recoveredHours||0)-completed);}
 function fixedOccurrences(y,m){let out=[];let last=new Date(y,m+1,0).getDate();data.students.forEach(st=>{let f=st.fixedSchedule||{};let schedules=Array.isArray(f)?f:(f.active&&f.time?[f]:[]);schedules.forEach((sch,si)=>{if(!sch||!sch.active||!sch.time)return;let days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];for(let d=1;d<=last;d++){let dt=new Date(y,m,d),dow=(dt.getDay()+6)%7;if(days.includes(dow)){let date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(st.startDate&&date<st.startDate)continue;let fixedId='fixed-'+st.id+'-'+si+'-'+date,suspended=(data.rain||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),cancelled=(data.cancellations||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),exists=data.classes.some(c=>c.date===date&&c.time===sch.time&&c.student===st.name);if(!exists&&!suspended&&!cancelled)out.push({id:fixedId,student:st.name,date,time:sch.time,duration:Number(sch.duration||1),status:'Fija',note:'Horario fijo'});}}});});return out;}
 function fixedOccurrencesRange(studentName,days=60,pastDays=31){let out=[];let start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-pastDays);for(let i=0;i<days+pastDays;i++){let dt=new Date(start);dt.setDate(start.getDate()+i);let y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate();for(const c of fixedOccurrences(y,m)){if(c.student===studentName&&c.date===`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`)out.push(c)}}return out;}let viewDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);function isUuid(v){return typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)}
 function newUuid(){return crypto.randomUUID()}
@@ -377,7 +391,7 @@ async function save(){
     return true;
   }finally{appSaveInProgress--}
 }
-function money(n){return '$'+Number(n||0).toLocaleString('es-AR')}function initials(n){return n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase()}function go(id,btn){const screen=document.getElementById(id);if(!screen)return;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));screen.classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');renderAll()}function renderAll(){renderHome();renderClassesList();renderMoney();renderPlans()}function rainDebtRows(student){
+function money(n){return '$'+Number(n||0).toLocaleString('es-AR')}function initials(n){return n.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase()}function go(id,btn){const screen=document.getElementById(id);if(!screen)return;document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));screen.classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');renderAll()}function renderAll(){renderHome();renderClassesList();renderMoney();renderPlans();scheduleRecoveryDayRefresh()}function rainDebtRows(student){
  const records=(data.rain||[]).filter(r=>String(r.student||'')===String(student.name)||String(r.studentId||'')===String(student.id));
  const ordered=records.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.fixedTime||a.time||'').localeCompare(String(b.fixedTime||b.time||'')));
  const known=ordered.reduce((sum,r)=>sum+Number(r.recoveredHours||0),0);
@@ -386,13 +400,13 @@ function money(n){return '$'+Number(n||0).toLocaleString('es-AR')}function initi
   const scheduledClass=data.classes.find(c=>String(c.id)===String(r.originalClassId||''))||data.classes.find(c=>c.student===student.name&&c.date===r.date&&c.status==='Lluvia');
   const hours=Number(r.hours||0),explicit=Number(r.recoveredHours||0),oldAllocation=Math.min(Math.max(0,hours-explicit),legacy);
   legacy-=oldAllocation;
-  const scheduled=scheduledRecoveriesForRain(r.id),completed=scheduled.filter(c=>c.date<localDateKey()).reduce((sum,c)=>sum+Number(c.duration||0),0);
+  const scheduled=scheduledRecoveriesForRain(r.id),completed=scheduled.filter(isRecoveryCompleted).reduce((sum,c)=>sum+Number(c.duration||0),0);
   const remaining=Math.min(Math.max(0,hours-explicit-oldAllocation-completed),Math.max(0,pendingHours(student)-total));total+=remaining;
-  const future=scheduled.filter(c=>c.date>=localDateKey());
+  const future=scheduled.filter(c=>!isRecoveryCompleted(c));
   const reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
   return {id:r.id||('rain-'+student.id+'-'+index),recordId:r.id||null,date:r.date||scheduledClass?.date||'',time:r.fixedTime||r.time||scheduledClass?.time||'',hours:remaining,availableHours:Math.max(0,remaining-reserved),scheduled:future,source:r};
  }).filter(r=>r.hours>0);
- const unmatched=Math.max(0,pendingHours(student)-total),legacyId='legacy-'+student.id,scheduled=scheduledRecoveriesForRain(legacyId),future=scheduled.filter(c=>c.date>=localDateKey()),reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
+ const unmatched=Math.max(0,pendingHours(student)-total),legacyId='legacy-'+student.id,scheduled=scheduledRecoveriesForRain(legacyId),future=scheduled.filter(c=>!isRecoveryCompleted(c)),reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
  if(unmatched>0)rows.push({id:'unmatched-'+student.id,recordId:legacyId,date:'',time:'',hours:unmatched,availableHours:Math.max(0,unmatched-reserved),scheduled:future,source:null,unmatched:true});
  return rows;
 }
@@ -418,8 +432,8 @@ function groupRainDebtRows(members){
  }
  return [...grouped.values()].map(entries=>{
   const main=entries.find(x=>String(x.record.student||'')===String(primary.name))||entries[0];
-  const scheduled=scheduledRecoveriesForRain(main.record.id),completed=scheduled.filter(c=>c.date<localDateKey()).reduce((sum,c)=>sum+Number(c.duration||0),0);
-  const hours=Math.max(0,Math.max(...entries.map(x=>x.remaining))-completed),future=scheduled.filter(c=>c.date>=localDateKey()),reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
+  const scheduled=scheduledRecoveriesForRain(main.record.id),completed=scheduled.filter(isRecoveryCompleted).reduce((sum,c)=>sum+Number(c.duration||0),0);
+  const hours=Math.max(0,Math.max(...entries.map(x=>x.remaining))-completed),future=scheduled.filter(c=>!isRecoveryCompleted(c)),reserved=future.reduce((sum,c)=>sum+Number(c.duration||0),0);
   return {id:main.record.id||('rain-'+primary.id+'-'+entries[0].record.date),recordId:main.record.id||null,date:main.record.date||'',time:main.record.fixedTime||main.record.time||'',hours,availableHours:Math.max(0,hours-reserved),scheduled:future,source:main.record,groupMembers:members,groupRows:entries};
  }).filter(x=>x.hours>0).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.time).localeCompare(String(b.time)));
 }
@@ -1946,7 +1960,7 @@ function refreshRecoveryDashboard(){if(appEntered&&!document.hidden)renderAll()}
 window.addEventListener('focus',refreshRecoveryDashboard);
 window.addEventListener('pageshow',refreshRecoveryDashboard);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshRecoveryDashboard()});
-function scheduleRecoveryDayRefresh(){const now=new Date(),next=new Date(now);next.setHours(24,0,5,0);setTimeout(()=>{refreshRecoveryDashboard();if(document.getElementById('modal')?.classList.contains('show')&&document.getElementById('sheet')?.textContent.includes('Horas por recuperar'))openRainDebtOverview();scheduleRecoveryDayRefresh()},next-now);}
+function scheduleRecoveryDayRefresh(){clearTimeout(window.recoveryRefreshTimer);const now=new Date(),midnight=new Date(now);midnight.setHours(24,0,5,0);let next=midnight.getTime();for(const c of data.classes||[]){if(!c.plannedRecovery)continue;const end=recoveryEndTime(c);if(end){const refreshAt=end.getTime()+60000;if(refreshAt>now.getTime()&&refreshAt<next)next=refreshAt}}window.recoveryRefreshTimer=setTimeout(()=>{refreshRecoveryDashboard();if(document.getElementById('modal')?.classList.contains('show')&&document.getElementById('sheet')?.textContent.includes('Horas por recuperar'))openRainDebtOverview();else if(!appEntered)scheduleRecoveryDayRefresh()},Math.max(1000,next-now.getTime()));}
 scheduleRecoveryDayRefresh();
 initAuth();
 </script></body></html>
