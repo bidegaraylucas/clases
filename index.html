@@ -280,6 +280,26 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .modal-close:hover{filter:brightness(1.08)}
 .modal-close:active{transform:scale(.96)}
 @media(max-width:700px){.sheet{padding:22px 18px max(24px,env(safe-area-inset-bottom))}.form{gap:13px}.form label{font-size:14px}.actions .btn{flex:1 1 auto}}
+
+/* Estados de clase más gráficos y fáciles de reconocer */
+.status-badge{display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:100%;padding:6px 10px;border:1px solid transparent;border-radius:999px;font-size:12px;font-weight:750;line-height:1.25}
+.status-badge-icon{display:inline-grid;place-items:center;min-width:17px;font-size:14px}
+.status-normal{background:#e8f5ec;color:#23633b;border-color:#c9e8d1}
+.status-rain{background:#fff2d9;color:#80510d;border-color:#f0d8a6}
+.status-cancel{background:#fde9ec;color:#8a303c;border-color:#f2cbd1}
+.status-recovery{background:#e8efff;color:#36599c;border-color:#cedbff}
+body.dark .status-normal,body.theme-pastel .status-normal{background:#1e3829;color:#b7edc9;border-color:#31583d}
+body.dark .status-rain,body.theme-pastel .status-rain{background:#3d321f;color:#ffe1a4;border-color:#5f4a27}
+body.dark .status-cancel,body.theme-pastel .status-cancel{background:#40262c;color:#ffcbd2;border-color:#65343b}
+body.dark .status-recovery,body.theme-pastel .status-recovery{background:#263450;color:#c8d8ff;border-color:#3b527d}
+.agenda-class-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.event.rain{background:#fff2d9!important;color:#80510d!important;border-left:3px solid #d2932c}
+.event.cancelled{background:#fde9ec!important;color:#8a303c!important;border-left:3px solid #d36a79}
+.event.recovery{background:#e8efff!important;color:#36599c!important;border-left:3px solid #6b8bd6}
+body.dark .event.rain,body.theme-pastel .event.rain{background:#3d321f!important;color:#ffe1a4!important}
+body.dark .event.cancelled,body.theme-pastel .event.cancelled{background:#40262c!important;color:#ffcbd2!important}
+body.dark .event.recovery,body.theme-pastel .event.recovery{background:#263450!important;color:#c8d8ff!important}
+@media(max-width:600px){.agenda-class-tools{width:100%;justify-content:space-between}.status-badge{font-size:12px}}
 </style></head><body><div id="authGate"><div id="authCard"><h2>Mis Clases</h2><div class="sub">Iniciá sesión para acceder a tus clases.</div><form id="authForm"><input id="authEmail" type="email" placeholder="Email" autocomplete="email" required><input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password" required><div id="authError"></div><button class="btn" type="submit">Iniciar sesión</button><div id="authLoading">Comprobando sesión…</div></form></div></div><div class="app"><header><div><h1>Mis Clases</h1></div><button class="btn secondary" onclick="openModal('settings')"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"></path><path d="M19 13.5a7.7 7.7 0 0 0 0-3l2-1.2-2-3.4-2.2 1a7.7 7.7 0 0 0-2.6-1.5L14 3h-4l-.2 2.4a7.7 7.7 0 0 0-2.6 1.5L5 5.9 3 9.3l2 1.2a7.7 7.7 0 0 0 0 3l-2 1.2 2 3.4 2.2-1a7.7 7.7 0 0 0 2.6 1.5L10 21h4l.2-2.4a7.7 7.7 0 0 0 2.6-1.5l2.2 1 2-3.4-2-1.2Z"></path></svg></button></header><main>
 <section id="home" class="screen active"><div class="grid" id="stats"></div><div class="section" id="homeArrearsSection" hidden><div class="sectionhead"><div><h2>Pagos pendientes de meses anteriores</h2><div class="sub">Avisos de meses anteriores que todavía no se cobraron.</div></div></div><div id="homeArrearsList" class="list"></div></div><div class="section"><div class="sectionhead"><div><h2>Alumnos</h2><div class="sub">Cada ficha reúne horarios, pagos y recuperaciones.</div></div><div class="actions" style="margin:0"><button class="btn small secondary" onclick="openModal('activity')">+ Escuelita</button><button class="btn small" onclick="openModal('student')">+ Alumno</button></div></div><details class="home-list-disclosure" id="homeStudentDisclosure"><summary><b>Lista de alumnos</b><span class="disclosure-count" id="homeStudentCount">0 alumnos</span></summary><div class="home-list-content"><div class="toolbar"><input class="search" id="homeStudentSearch" placeholder="Buscar alumno..." oninput="renderHomeStudents()"></div><div id="homeStudentList" class="list"></div></div></details></div><div class="section"><details class="home-list-disclosure" id="homeDebtDisclosure"><summary><b>Horas por recuperar</b><span class="disclosure-count" id="homeDebtCount">0 h</span></summary><div class="home-list-content" id="homeDebt"></div></details></div><div class="section" id="homeActivities"></div></section>
 <section id="students" class="screen"><div class="sectionhead"><div><h2>Mi semana</h2><div class="sub">Agenda semanal de clases</div></div></div><div class="week-toolbar"><button class="btn secondary small" onclick="changeClassWeek(-1)" aria-label="Semana anterior">‹</button><b id="classWeekTitle"></b><span class="muted" id="classWeekRange"></span><button class="btn secondary small" onclick="changeClassWeek(1)" aria-label="Semana siguiente">›</button><button class="btn small" onclick="goToCurrentWeek()">Hoy</button></div><div id="classWeekDays" class="week-days"></div><div class="class-list-date selected-day-title" id="classWeekDayTitle"></div><div id="classWeekList" class="list"></div></section>
@@ -716,8 +736,19 @@ function classListOccurrences(pastDays=7,futureDays=45){
   }
   return out.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
 }
-function classStatusLabel(c){if(c.status==='Fija')return 'Programada';if(c.status==='Lluvia')return 'Lluvia';if(c.status==='Cancelada')return 'Canceló';if(isRecoveryClass(c))return 'Recuperación';if(c.status==='Clase grupal')return 'Grupal';return 'Clase'}
-function classStatusBadge(c){const cls=(c.status==='Lluvia'||c.status==='Cancelada')?'red':'';return `<span class="badge ${cls}">${classStatusLabel(c)}</span>`}
+function classStatusLabel(c){
+ if(c.status==='Lluvia')return 'Suspendida por lluvia';
+ if(c.status==='Cancelada')return 'Cancelada por el alumno';
+ if(isRecoveryClass(c))return isRecoveryCompleted(c)?'Recuperada':'Recuperación';
+ return 'Normal';
+}
+function classStatusBadge(c){
+ let kind='normal',icon='✓',label='Normal';
+ if(c.status==='Lluvia'){kind='rain';icon='☂️';label='Suspendida por lluvia'}
+ else if(c.status==='Cancelada'){kind='cancel';icon='✕';label='Cancelada por el alumno'}
+ else if(isRecoveryClass(c)){kind='recovery';icon='↻';label=isRecoveryCompleted(c)?'Recuperada':'Recuperación'}
+ return '<span class="status-badge status-'+kind+'" role="status"><span class="status-badge-icon" aria-hidden="true">'+icon+'</span><span>'+label+'</span></span>';
+}
 function startOfWeek(d=new Date()){const x=new Date(d);x.setHours(0,0,0,0);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x}
 let classWeekStart=startOfWeek(new Date());
 let classWeekSelected=weekDateKey(new Date());
@@ -826,7 +857,7 @@ function renderStudentGroupDetail(){
   const date=new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'});
   const state=c.status==='Lluvia'?'rain':c.status==='Cancelada'?'cancel':'normal';
   const labelState=state==='rain'?'☂️ Lluvia':state==='cancel'?'❌ Cancelada':isRecoveryClass(c)?'Recuperación':'Normal';
-  return '<div class="agenda-class"><div class="agenda-class-info"><b>'+date+' · '+(c.time||'—')+'</b><span class="muted">'+(c.duration||1)+' h · '+labelState+' · '+label+'</span></div>'+(isRecoveryClass(c)?'<span class="badge blue">Recuperación</span>':'<select class="agenda-state" aria-label="Estado de clase grupal" onchange="setStudentClassStatus(\''+c.id+'\',this.value,\''+c.studentId+'\')"><option value="normal" '+(state==='normal'?'selected':'')+'>Normal</option><option value="rain" '+(state==='rain'?'selected':'')+'>☂️ Lluvia · recuperar</option><option value="cancel" '+(state==='cancel'?'selected':'')+'>❌ Cancelada · no recuperar</option></select>')+'</div>';
+  return '<div class="agenda-class"><div class="agenda-class-info"><b>'+date+' · '+(c.time||'—')+'</b><span class="muted">'+(c.duration||1)+' h · '+label+'</span></div>'+classStatusBadge(c)+(isRecoveryClass(c)?'':'<select class="agenda-state" aria-label="Estado de clase grupal" onchange="setStudentClassStatus(\''+c.id+'\',this.value,\''+c.studentId+'\')"><option value="normal" '+(state==='normal'?'selected':'')+'>Normal</option><option value="rain" '+(state==='rain'?'selected':'')+'>☂️ Lluvia · recuperar</option><option value="cancel" '+(state==='cancel'?'selected':'')+'>❌ Cancelada · no recuperar</option></select>')+'</div>';
  }).join(''):'<div class="empty">No hay clases en este período.</div>';
  body.innerHTML='<div class="sectionhead"><div><h2>Integrantes</h2><div class="sub">Las clases se comparten; cada pago sigue siendo individual.</div></div></div>'+
  members.map(x=>'<div class="card"><div class="row between"><div><b>'+x.name+'</b><div class="muted">'+money(x.price||0)+' · '+(x.tariff==='group'?'Tarifa grupal':'Tarifa individual')+'</div></div><div class="actions" style="margin:0"><span class="badge '+(x.paid?'':'red')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><button class="btn small" onclick="togglePaid(\''+x.id+'\');renderStudentGroupDetail()">'+(x.paid?'Marcar pendiente':'Me pagó')+'</button><button class="btn secondary small" onclick="openStudentDetail(\''+x.id+'\')">Perfil</button></div></div></div>').join('')+
@@ -841,7 +872,7 @@ function renderStudentDetail(){
   const date=new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'});
   const state=c.status==='Lluvia'?'rain':c.status==='Cancelada'?'cancel':'normal';
   const label=state==='rain'?'☂️ Lluvia':state==='cancel'?'❌ Cancelada':isRecoveryClass(c)?'Recuperación':'Normal';
-  return '<div class="agenda-class"><div class="agenda-class-info"><b>'+date+' · '+(c.time||'—')+'</b><span class="muted">'+(c.duration||1)+' h · '+label+'</span></div>'+(isRecoveryClass(c)?'<span class="badge blue">Recuperación</span>':'<select class="agenda-state" aria-label="Estado de clase" onchange="setStudentClassStatus(\''+c.id+'\',this.value,\''+x.id+'\')"><option value="normal" '+(state==='normal'?'selected':'')+'>Normal</option><option value="rain" '+(state==='rain'?'selected':'')+'>☂️ Lluvia · recuperar</option><option value="cancel" '+(state==='cancel'?'selected':'')+'>❌ Cancelada · no recuperar</option></select>')+'</div>';
+  return '<div class="agenda-class"><div class="agenda-class-info"><b>'+date+' · '+(c.time||'—')+'</b><span class="muted">'+(c.duration||1)+' h</span></div>'+classStatusBadge(c)+(isRecoveryClass(c)?'':'<select class="agenda-state" aria-label="Estado de clase" onchange="setStudentClassStatus(\''+c.id+'\',this.value,\''+x.id+'\')"><option value="normal" '+(state==='normal'?'selected':'')+'>Normal</option><option value="rain" '+(state==='rain'?'selected':'')+'>☂️ Lluvia · recuperar</option><option value="cancel" '+(state==='cancel'?'selected':'')+'>❌ Cancelada · no recuperar</option></select>')+'</div>';
  }).join(''):'<div class="empty">No hay clases en este período. Agregá una clase o configurá un horario semanal.</div>';
  title.innerHTML='<h2 style="margin:0">'+x.name+'</h2>';
  body.innerHTML='<div class="card"><div class="row"><div class="avatar">'+initials(x.name)+'</div><div><b>'+(x.age||'-')+' años</b><div class="muted">'+(x.level||'Nivel no cargado')+'</div></div></div>'+
@@ -928,7 +959,7 @@ function calendarClassForOccurrence(c){
   const clickable=c.kind!=='activity';
   const isRain=c.status==='Lluvia';
   const label=c.grouped&&Array.isArray(c.groupMembers)?c.groupMembers.join(' + '):(c.kind==='activity'?'Escuelita':(c.student||c.name||'Clase'));
-  return `<span class="event ${isRecoveryClass(c)?'recovery':''} ${isRain?'rain':''} ${c.status==='Cancelada'?'cancelled':''}" ${clickable?`onclick="openCalendarClassAction('${id}');event.stopPropagation()"`:''}>${isRain?'🌧️ ':isRecoveryClass(c)?'🔁 ':''}${c.time?c.time+' ':''}${label}${c.kind==='activity'?'':' · '+(isRecoveryClass(c)?'Recuperación':c.status)}</span>`;
+  const prefix=isRain?'☂️ ':c.status==='Cancelada'?'❌ ':isRecoveryClass(c)?'🔁 ':'';const stateLabel=isRain?'Suspendida por lluvia':c.status==='Cancelada'?'Cancelada por el alumno':isRecoveryClass(c)?'Recuperación':c.status==='Fija'?'Normal':c.status;return `<span class="event ${isRecoveryClass(c)?'recovery':''} ${isRain?'rain':''} ${c.status==='Cancelada'?'cancelled':''}" ${clickable?`onclick="openCalendarClassAction('${id}');event.stopPropagation()"`:''}>${prefix}${c.time?c.time+' ':''}${label}${c.kind==='activity'?'':' · '+stateLabel}</span>`;
 }
 function openCalendarClassAction(id){
   const y=viewDate.getFullYear(),m=viewDate.getMonth();
@@ -1323,7 +1354,7 @@ async function syncClassToGoogle(c){
   }
   const status=(c.status==='Lluvia'||c.status==='suspendida')?'rain':
     (c.status==='Cancelada'||c.status==='cancelada')?'cancel':'';
-  if(status==='rain'){
+  if(status==='rain'||status==='cancel'){
     if(eventId){
       try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId),{method:'DELETE'})}
       catch(error){if(!isGoogleMissingResource(error))throw error}
@@ -1461,7 +1492,7 @@ async function syncFixedSuspensionsToGoogle(){
     eventId=occurrence.id;
    }
   }
-  const bodyFor=(start,end)=>({summary,description,start,end,status:status==='rain'?'cancelled':'confirmed',transparency:status==='normal'?'opaque':'transparent',extendedProperties:{private:privateProps}});
+  const bodyFor=(start,end)=>({summary,description,start,end,status:status==='normal'?'confirmed':'cancelled',transparency:status==='normal'?'opaque':'transparent',extendedProperties:{private:privateProps}});
   let savedId=eventId;
   if(eventId){
    try{
@@ -1472,11 +1503,7 @@ async function syncFixedSuspensionsToGoogle(){
     await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId),{method:'PUT',body:JSON.stringify(bodyFor(start,end))});
    }catch(e){if(!isGoogleMissingResource(e))throw e;savedId=null}
   }
-  if(!savedId&&status==='cancel'){
-   const range=status==='normal'?originalRange:compactRange;
-   const created=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events',{method:'POST',body:JSON.stringify({...bodyFor({dateTime:range.start,timeZone:tz},{dateTime:range.end,timeZone:tz}),extendedProperties:{private:{...privateProps,kind:'fixed_instance'}}})});
-   savedId=created.id;
-  }
+
   if(savedId){
    for(const duplicateId of ids){
     if(duplicateId===savedId)continue;
@@ -1779,7 +1806,7 @@ async function initGoogleCalendar(){
     googleCalendarId=await getConfig('google_calendar_id');
     const connected=await refreshPersistentGoogleToken();
     if(connected){
-      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>['lluvia','suspendida'].includes(String(c.status||'').toLowerCase())||(c.date>=localDateKey()&&((isRecoveryClass(c)&&(!c.plannedRecovery||!isRecoveryCompleted(c)))||String(c.status||'').toLowerCase()==='cancelada'))))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
+      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>['lluvia','suspendida','cancelada'].includes(String(c.status||'').toLowerCase())||(c.date>=localDateKey()&&isRecoveryClass(c)&&(!c.plannedRecovery||!isRecoveryCompleted(c)))))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
       catch(e){console.warn('Google Calendar duplicate reconciliation:',e.message)}
     }
     updateGoogleStatus();
