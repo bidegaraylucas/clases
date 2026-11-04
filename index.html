@@ -1771,7 +1771,7 @@ async function initGoogleCalendar(){
     googleCalendarId=await getConfig('google_calendar_id');
     const connected=await refreshPersistentGoogleToken();
     if(connected){
-      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>isRecoveryClass(c)&&(c.plannedRecovery?!isRecoveryCompleted(c):c.date>=localDateKey())))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
+      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>c.date>=localDateKey()&&((isRecoveryClass(c)&&(!c.plannedRecovery||!isRecoveryCompleted(c)))||['lluvia','suspendida','cancelada'].includes(String(c.status||'').toLowerCase()))))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
       catch(e){console.warn('Google Calendar duplicate reconciliation:',e.message)}
     }
     updateGoogleStatus();
