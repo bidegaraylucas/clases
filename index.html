@@ -1323,6 +1323,15 @@ async function syncClassToGoogle(c){
   }
   const status=(c.status==='Lluvia'||c.status==='suspendida')?'rain':
     (c.status==='Cancelada'||c.status==='cancelada')?'cancel':'';
+  if(status==='rain'){
+    if(eventId){
+      try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId),{method:'DELETE'})}
+      catch(error){if(!isGoogleMissingResource(error))throw error}
+    }
+    c.googleEventId=null;
+    if(isUuid(c.id)){const {error}=await supabaseClient.from('clases').update({google_event_id:null}).eq('id',c.id);if(error)throw error}
+    return;
+  }
   const studentObj=data.students.find(x=>String(x.name).trim()===String(c.student).trim());
   const groupLabel=String(c.note||'').match(/^\[Grupo:([^\]]+)\]/)?.[1]||'';
   const displayStudent=groupLabel||c.student;
@@ -1330,9 +1339,8 @@ async function syncClassToGoogle(c){
   const ordinaryTitle=(isRecoveryClass(c)?'🔁 ':'')+displayStudent;
   const title=status?googleStatusTitle(displayStudent,displayStudent,status):ordinaryTitle;
   const eventNote=String(c.note||'').replace(/^\[Grupo:[^\]]+\]\s*/,'');
-  const dt=googleDateTime(c.date,c.time,c.duration),calendarDt=status?googleDateTime(c.date,c.time,0.25):dt;
-  const statusText=status==='rain'?'Suspendida por lluvia · se recupera':
-    status==='cancel'?'Cancelada por el alumno · no se recupera':'';
+  const dt=googleDateTime(c.date,c.time,c.duration),calendarDt=status==='cancel'?googleDateTime(c.date,c.time,0.25):dt;
+  const statusText=status==='cancel'?'Cancelada por el alumno · no se recupera':'';
   const body={
     summary:title,
     description:[statusText,status?'Horario original: '+(c.time||'—')+'–'+dt.end.slice(11,16)+' ('+Number(c.duration||1)+' h)':'',eventNote||'Clase creada desde Mis Clases'].filter(Boolean).join(' · '),
@@ -1343,15 +1351,15 @@ async function syncClassToGoogle(c){
   };
   if(eventId){
     try{
-      await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(eventId)}`,{method:'PUT',body:JSON.stringify(body)});
+      await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId),{method:'PUT',body:JSON.stringify(body)});
       c.googleEventId=eventId;
-    }catch(e){
-      if(['resource has been deleted','not found','404','410'].some(x=>String(e.message).toLowerCase().includes(x))){eventId=null;c.googleEventId=null;}
-      else throw e;
+    }catch(error){
+      if(isGoogleMissingResource(error)){eventId=null;c.googleEventId=null;}
+      else throw error;
     }
   }
   if(!eventId){
-    const ev=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events`,{method:'POST',body:JSON.stringify(body)});
+    const ev=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events',{method:'POST',body:JSON.stringify(body)});
     c.googleEventId=ev.id;
   }
   if(isUuid(c.id)){
@@ -1436,14 +1444,14 @@ async function syncFixedSuspensionsToGoogle(){
   let eventId=ids[0]||null,occurrence=null;
   if(seriesId){
    const startLocal=new Date(group.date+'T00:00:00'),endLocal=new Date(startLocal.getTime()+86400000);
-   const params='singleEvents=true&showDeleted=false&timeMin='+encodeURIComponent(startLocal.toISOString())+'&timeMax='+encodeURIComponent(endLocal.toISOString())+'&maxResults=20';
+   const params='singleEvents=true&showDeleted=true&timeMin='+encodeURIComponent(startLocal.toISOString())+'&timeMax='+encodeURIComponent(endLocal.toISOString())+'&maxResults=20';
    try{
     const result=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(seriesId)+'/instances?'+params);
     occurrence=(result.items||[]).find(ev=>String(ev.originalStartTime?.dateTime||ev.start?.dateTime||'').slice(0,10)===group.date);
    }catch(e){if(!isGoogleMissingResource(e))throw e}
    if(occurrence){
     const pp=occurrence.extendedProperties?.private||{};
-    const hasOverride=!!pp.fixed_occurrence_id||occurrence.summary!==baseSummary||occurrence.description!=='Horario fijo de Mis Clases';
+    const hasOverride=occurrence.status==='cancelled'||!!pp.fixed_occurrence_id||occurrence.summary!==baseSummary||occurrence.description!=='Horario fijo de Mis Clases';
     if(status==='normal'&&!hasOverride){
      for(const id of ids){try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(id),{method:'DELETE'})}catch(e){if(!isGoogleMissingResource(e))throw e}}
      items.forEach(item=>item.googleEventId=null);
@@ -1453,7 +1461,7 @@ async function syncFixedSuspensionsToGoogle(){
     eventId=occurrence.id;
    }
   }
-  const bodyFor=(start,end)=>({summary,description,start,end,transparency:status==='normal'?'opaque':'transparent',extendedProperties:{private:privateProps}});
+  const bodyFor=(start,end)=>({summary,description,start,end,status:status==='rain'?'cancelled':'confirmed',transparency:status==='normal'?'opaque':'transparent',extendedProperties:{private:privateProps}});
   let savedId=eventId;
   if(eventId){
    try{
@@ -1464,7 +1472,7 @@ async function syncFixedSuspensionsToGoogle(){
     await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId),{method:'PUT',body:JSON.stringify(bodyFor(start,end))});
    }catch(e){if(!isGoogleMissingResource(e))throw e;savedId=null}
   }
-  if(!savedId&&status!=='normal'){
+  if(!savedId&&status==='cancel'){
    const range=status==='normal'?originalRange:compactRange;
    const created=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events',{method:'POST',body:JSON.stringify({...bodyFor({dateTime:range.start,timeZone:tz},{dateTime:range.end,timeZone:tz}),extendedProperties:{private:{...privateProps,kind:'fixed_instance'}}})});
    savedId=created.id;
@@ -1771,7 +1779,7 @@ async function initGoogleCalendar(){
     googleCalendarId=await getConfig('google_calendar_id');
     const connected=await refreshPersistentGoogleToken();
     if(connected){
-      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>c.date>=localDateKey()&&((isRecoveryClass(c)&&(!c.plannedRecovery||!isRecoveryCompleted(c)))||['lluvia','suspendida','cancelada'].includes(String(c.status||'').toLowerCase()))))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
+      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>['lluvia','suspendida'].includes(String(c.status||'').toLowerCase())||(c.date>=localDateKey()&&((isRecoveryClass(c)&&(!c.plannedRecovery||!isRecoveryCompleted(c)))||String(c.status||'').toLowerCase()==='cancelada'))))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
       catch(e){console.warn('Google Calendar duplicate reconciliation:',e.message)}
     }
     updateGoogleStatus();
