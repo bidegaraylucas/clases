@@ -259,6 +259,10 @@ body.theme-custom-dark .btn:hover,body.theme-custom-dark .activity-option:hover{
 .plan-date-group[open]>summary{color:var(--bold-text,var(--text))}
 @media(max-width:520px){.plan-date-group>summary{align-items:flex-start;flex-direction:column;gap:3px}.plan-date-group>summary .plan-group-toggle{white-space:normal}}
 
+.btn.danger{background:#fae9eb;color:#842d37;border:1px solid #efcdd1}
+body.dark .btn.danger,body.theme-pastel .btn.danger{background:#38252a;color:#ffd8dd;border-color:#59343b}
+.recovery-actions{flex-wrap:wrap}
+@media(max-width:600px){.recovery-actions .btn{flex:1 1 100%}}
 /* Mejor lectura y controles cómodos */
 .sub{font-size:14px;line-height:1.45}
 .card .muted,.card small{font-size:14px;line-height:1.45}
@@ -544,7 +548,7 @@ function openRainDebtOverview(studentId){
    const time=item.time||'Hora sin registrar';
    const scheduledText=item.scheduled?.length?item.scheduled.map(c=>new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})+(c.time?' · '+c.time:'')).join(', '):'';
    const statusText=scheduledText?' · Programada para recuperar '+scheduledText:'';
-   const action='<div class="actions recovery-actions" style="margin:0">'+(item.availableHours>0?'<button class="btn small" onclick="openRainRecovery(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">'+(item.scheduled?.length?'Programar otra parte':'Programar recuperación')+'</button>':'')+(item.scheduled||[]).map(c=>'<button class="btn secondary small" onclick="editScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Cambiar fecha y duración</button>').join('')+'</div>';
+   const action='<div class="actions recovery-actions" style="margin:0">'+(item.availableHours>0?'<button class="btn small" onclick="openRainRecovery(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">'+(item.scheduled?.length?'Programar otra parte':'Programar recuperación')+'</button>':'')+(item.scheduled||[]).map(c=>'<button class="btn secondary small" onclick="editScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Cambiar fecha y duración</button><button class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;)">Quitar fecha</button>').join('')+'</div>';
    return '<div class="card debt-item"><div><b>'+date+' · '+time+'</b><div class="muted">'+item.hours+' h pendientes'+(entry.group?' · una sola recuperación para el grupo':'')+statusText+'</div></div>'+action+'</div>';
   }).join('')+'</div>';
  }).join('');
@@ -574,6 +578,40 @@ async function saveScheduledRecoveryDate(e){
   showSaveNotice(pending?'Cambio guardado. Calendar quedó pendiente de sincronizar y se reintentará automáticamente.':'Recuperación actualizada y sincronizada con Calendar.');
  }catch(error){console.error('No se pudo guardar la recuperación:',error);showSaveNotice('No se pudo completar el guardado. Revisá la conexión e intentá de nuevo.')}
 
+}
+async function deleteScheduledRecovery(classId,studentId){
+ const recovery=data.classes.find(c=>String(c.id)===String(classId)&&c.plannedRecovery);
+ if(!recovery)return;
+ const student=data.students.find(x=>String(x.id)===String(studentId));
+ if(!confirm('¿Quitar esta fecha de recuperación? La duración volverá a quedar pendiente y se borrará el evento de Calendar.'))return;
+ let eventId=recovery.googleEventId||null,remoteDeleted=false;
+ try{
+  if(!eventId&&isUuid(recovery.id)){
+   const row=await supabaseClient.from('clases').select('google_event_id').eq('id',recovery.id).maybeSingle();
+   if(row.error)throw row.error;
+   eventId=row.data?.google_event_id||null;
+  }
+  if(eventId)await queueGoogleEventDeletion(eventId);
+  if(isUuid(recovery.id)){
+   const {error}=await supabaseClient.from('clases').delete().eq('id',recovery.id);
+   if(error)throw error;
+   remoteDeleted=true;
+  }
+  data.classes=data.classes.filter(c=>String(c.id)!==String(classId));
+  localStorage.setItem(KEY,JSON.stringify(data));
+  const saved=await save();
+  let calendarDone=!eventId;
+  if(eventId&&googleToken&&googleCalendarId){
+   try{calendarDone=await flushGoogleEventDeletionQueue()}catch(error){console.warn('La eliminación del evento quedó pendiente:',error);calendarDone=false}
+  }
+  closeModal();
+  if(student)openRainDebtOverview(student.id);else openRainDebtOverview();
+  showSaveNotice(calendarDone?'Fecha quitada. Las horas volvieron a quedar pendientes.': 'Fecha quitada y horas pendientes. La eliminación de Calendar quedó en cola y se reintentará al conectar.');
+  if(saved===false)console.warn('La fecha fue eliminada, pero hubo otro error al guardar los datos relacionados.');
+ }catch(error){
+  if(eventId&&!remoteDeleted){try{await removeQueuedGoogleEventDeletion(eventId)}catch(queueError){console.error('No se pudo limpiar la cola de eventos:',queueError)}}
+  alert('No se pudo quitar la fecha de recuperación: '+(error.message||error));
+ }
 }
 function showSaveNotice(message){
  let notice=document.getElementById('saveNotice');
@@ -1084,6 +1122,32 @@ async function googleApi(path,options={},retryAuth=true,rateRetries=0){
 }
 async function getConfig(key){const {data,error}=await supabaseClient.from('configuracion').select('valor').eq('clave',key).maybeSingle();if(error)throw error;return data?.valor||null}
 async function setConfig(key,value){const {error}=await supabaseClient.from('configuracion').upsert({clave:key,valor:String(value)},{onConflict:'clave'});if(error)throw error}
+async function queueGoogleEventDeletion(eventId){
+ if(!eventId)return;
+ const key='google_event_delete_queue';
+ const raw=await getConfig(key);let ids=[];try{ids=JSON.parse(raw||'[]')}catch{}
+ if(!Array.isArray(ids))ids=[];
+ if(!ids.includes(String(eventId))){ids.push(String(eventId));await setConfig(key,JSON.stringify(ids))}
+}
+async function removeQueuedGoogleEventDeletion(eventId){
+ const key='google_event_delete_queue';
+ const raw=await getConfig(key);let ids=[];try{ids=JSON.parse(raw||'[]')}catch{}
+ if(Array.isArray(ids))await setConfig(key,JSON.stringify(ids.filter(id=>String(id)!==String(eventId))));
+}
+async function flushGoogleEventDeletionQueue(){
+ const key='google_event_delete_queue';
+ const raw=await getConfig(key);let ids=[];try{ids=JSON.parse(raw||'[]')}catch{}
+ if(!Array.isArray(ids)||!ids.length)return true;
+ if(!googleToken||!googleCalendarId)return false;
+ const remaining=[];
+ for(let index=0;index<ids.length;index++){
+  const id=ids[index];
+  try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(id),{method:'DELETE'})}
+  catch(error){if(!isGoogleMissingResource(error)){remaining.push(...ids.slice(index));await setConfig(key,JSON.stringify(remaining));throw error}}
+ }
+ await setConfig(key,JSON.stringify(remaining));
+ return remaining.length===0;
+}
 function updateGoogleStatus(){const el=document.getElementById('googleCalendarStatus'),button=document.getElementById('googleConnectButton');if(!el)return;if(googleConnectionError){el.textContent='No se pudo verificar la conexión. Revisá internet o renovala si persiste.';if(button)button.textContent='Reintentar conexión'}else if(googleToken){el.textContent=googleCalendarId?'Conectado · sincronización automática activa':'Conectado · se sincronizará al crear la primera clase';if(button)button.textContent='Renovar conexión'}else{el.textContent='No conectado · conectalo una vez para activar la sincronización automática';if(button)button.textContent='Conectar Google'}}
 async function syncGoogleFromSettings(){
   if(googleSyncTimer){clearTimeout(googleSyncTimer);googleSyncTimer=null}googleSyncPending=false;
@@ -1102,7 +1166,7 @@ async function clearGoogleFromSettings(){
       const {error}=await supabaseClient.from(table).delete().not('id','is',null);
       if(error)throw error;
     }
-    const keys=['actividades_recurrentes','cancelaciones_alumno','estados_clases_fijas','google_activity_event_ids','google_calendar_id','google_clear_requested','google_fixed_event_ids','suspensiones_lluvia'];
+    const keys=['actividades_recurrentes','cancelaciones_alumno','estados_clases_fijas','google_activity_event_ids','google_calendar_id','google_clear_requested','google_fixed_event_ids','google_event_delete_queue','suspensiones_lluvia'];
     const {error:configError}=await supabaseClient.from('configuracion').delete().in('clave',keys);
     if(configError)throw configError;
     data={students:[],classes:[],rain:[],cancellations:[],payments:[],rates:{class:12000,individual:90000,group:60000},plans:[],activities:[],fixedOverrides:[]};
@@ -1266,14 +1330,15 @@ async function syncClassToGoogle(c){
   const ordinaryTitle=(isRecoveryClass(c)?'🔁 ':'')+displayStudent;
   const title=status?googleStatusTitle(displayStudent,displayStudent,status):ordinaryTitle;
   const eventNote=String(c.note||'').replace(/^\[Grupo:[^\]]+\]\s*/,'');
-  const dt=googleDateTime(c.date,c.time,c.duration);
+  const dt=googleDateTime(c.date,c.time,c.duration),calendarDt=status?googleDateTime(c.date,c.time,0.25):dt;
   const statusText=status==='rain'?'Suspendida por lluvia · se recupera':
     status==='cancel'?'Cancelada por el alumno · no se recupera':'';
   const body={
     summary:title,
-    description:[statusText,eventNote||'Clase creada desde Mis Clases'].filter(Boolean).join(' · '),
-    start:{dateTime:dt.start,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
-    end:{dateTime:dt.end,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
+    description:[statusText,status?'Horario original: '+(c.time||'—')+'–'+dt.end.slice(11,16)+' ('+Number(c.duration||1)+' h)':'',eventNote||'Clase creada desde Mis Clases'].filter(Boolean).join(' · '),
+    start:{dateTime:calendarDt.start,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
+    end:{dateTime:calendarDt.end,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},
+    transparency:status?'transparent':'opaque',
     extendedProperties:{private:{mis_clases:'1',student:displayStudent,kind:'class',class_status:status||(isRecoveryClass(c)?'recuperacion':'programada'),grouped:isGroup?'1':'0'}}
   };
   if(eventId){
@@ -1363,7 +1428,8 @@ async function syncFixedSuspensionsToGoogle(){
   const status=statuses.includes('rain')?'rain':statuses.includes('cancel')?'cancel':'normal';
   for(const item of items)item.status=status;
   const summary=googleStatusTitle(baseSummary,names[0],status);
-  const description=status==='rain'?'Suspendida por lluvia · se recupera':status==='cancel'?'Cancelada por el alumno · no se recupera':'Horario fijo de Mis Clases';
+  const originalRange=googleDateTime(group.date,group.time,group.duration),compactRange=googleDateTime(group.date,group.time,0.25);
+  const description=status==='rain'?'Suspendida por lluvia · se recupera · Horario original: '+group.time+'–'+originalRange.end.slice(11,16)+' ('+group.duration+' h)':status==='cancel'?'Cancelada por el alumno · no se recupera · Horario original: '+group.time+'–'+originalRange.end.slice(11,16)+' ('+group.duration+' h)':'Horario fijo de Mis Clases';
   const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
   const privateProps={mis_clases:'1',kind:'fixed_instance',student:names.join(' + '),fixed_occurrence_id:primary.fixedOccurrenceId,fixed_status:status,status_student:names.join(' + ')};
   const ids=[...new Set(items.map(x=>x.googleEventId).filter(Boolean))];
@@ -1387,19 +1453,19 @@ async function syncFixedSuspensionsToGoogle(){
     eventId=occurrence.id;
    }
   }
-  const bodyFor=(start,end)=>({summary,description,start,end,extendedProperties:{private:privateProps}});
+  const bodyFor=(start,end)=>({summary,description,start,end,transparency:status==='normal'?'opaque':'transparent',extendedProperties:{private:privateProps}});
   let savedId=eventId;
   if(eventId){
    try{
     let current=occurrence;
     if(!current){try{current=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId))}catch(e){if(!isGoogleMissingResource(e))throw e}}
-    const start=current?.start||(()=>{const r=googleDateTime(group.date,group.time,group.duration);return {dateTime:r.start,timeZone:tz}})();
-    const end=current?.end||(()=>{const r=googleDateTime(group.date,group.time,group.duration);return {dateTime:r.end,timeZone:tz}})();
+    const start=current?.start||{dateTime:originalRange.start,timeZone:tz};
+    const end=status==='normal'?{dateTime:originalRange.end,timeZone:tz}:{dateTime:compactRange.end,timeZone:tz};
     await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(eventId),{method:'PUT',body:JSON.stringify(bodyFor(start,end))});
    }catch(e){if(!isGoogleMissingResource(e))throw e;savedId=null}
   }
   if(!savedId&&status!=='normal'){
-   const range=googleDateTime(group.date,group.time,group.duration);
+   const range=status==='normal'?originalRange:compactRange;
    const created=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events',{method:'POST',body:JSON.stringify({...bodyFor({dateTime:range.start,timeZone:tz},{dateTime:range.end,timeZone:tz}),extendedProperties:{private:{...privateProps,kind:'fixed_instance'}}})});
    savedId=created.id;
   }
@@ -1576,6 +1642,7 @@ async function resetGoogleCalendars(){
   await setConfig('google_calendar_id','');
   await setConfig('google_activity_event_ids','{}');
   await setConfig('google_fixed_event_ids','{}');
+  await setConfig('google_event_delete_queue','[]');
   return r;
 }
 async function connectGoogleCalendar(force=false){
@@ -1653,6 +1720,7 @@ async function syncCalendarChanges(changes){
   if(!changes||changes.full)return syncAllToGoogle(true);
   await ensureGoogleAccessToken();
   await ensureGoogleCalendar();
+  await flushGoogleEventDeletionQueue();
   if(changes.cleanup)await cleanupGoogleOrphans();
   const ids=new Set(changes.classIds||[]);
   for(const c of data.classes)if(ids.has(String(c.id)))await syncClassToGoogle(c);
@@ -1689,6 +1757,7 @@ async function runQueuedGoogleCalendarSync(){
 async function syncAllToGoogle(auto=false){
   await ensureGoogleAccessToken();
   await ensureGoogleCalendar();
+  await flushGoogleEventDeletionQueue();
   await cleanupGoogleOrphans();
   for(const c of data.classes)await syncClassToGoogle(c);
   await syncFixedSchedulesToGoogle();
@@ -1702,7 +1771,7 @@ async function initGoogleCalendar(){
     googleCalendarId=await getConfig('google_calendar_id');
     const connected=await refreshPersistentGoogleToken();
     if(connected){
-      try{await ensureGoogleCalendar();for(const c of data.classes.filter(c=>isRecoveryClass(c)&&(c.plannedRecovery?!isRecoveryCompleted(c):c.date>=localDateKey())))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
+      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>isRecoveryClass(c)&&(c.plannedRecovery?!isRecoveryCompleted(c):c.date>=localDateKey())))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
       catch(e){console.warn('Google Calendar duplicate reconciliation:',e.message)}
     }
     updateGoogleStatus();
