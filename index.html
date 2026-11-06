@@ -326,6 +326,15 @@ body.dark .home-student:hover,body.theme-pastel .home-student:hover,body.dark .h
  .recovery-actions{width:100%;justify-content:flex-start}
  .recovery-actions .btn{flex:1 1 100%}
 }
+
+.recovery-records{margin-top:14px}
+.recovery-record{align-items:flex-start}
+.recovery-record-actions{flex-wrap:wrap}
+@media(max-width:600px){
+ .recovery-record{align-items:stretch;flex-direction:column}
+ .recovery-record-actions{width:100%;flex-direction:column}
+ .recovery-record-actions .btn{width:100%}
+}
 </style></head><body><div id="authGate"><div id="authCard"><h2>Mis Clases</h2><div class="sub">Iniciá sesión para acceder a tus clases.</div><form id="authForm"><input id="authEmail" type="email" placeholder="Email" autocomplete="email" required><input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password" required><div id="authError"></div><button class="btn" type="submit">Iniciar sesión</button><div id="authLoading">Comprobando sesión…</div></form></div></div><div class="app"><header><div><h1>Mis Clases</h1></div><button class="btn secondary" onclick="openModal('settings')"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"></path><path d="M19 13.5a7.7 7.7 0 0 0 0-3l2-1.2-2-3.4-2.2 1a7.7 7.7 0 0 0-2.6-1.5L14 3h-4l-.2 2.4a7.7 7.7 0 0 0-2.6 1.5L5 5.9 3 9.3l2 1.2a7.7 7.7 0 0 0 0 3l-2 1.2 2 3.4 2.2-1a7.7 7.7 0 0 0 2.6 1.5L10 21h4l.2-2.4a7.7 7.7 0 0 0 2.6-1.5l2.2 1 2-3.4-2-1.2Z"></path></svg></button></header><main>
 <section id="home" class="screen active"><div class="grid" id="stats"></div><div class="section" id="homeArrearsSection" hidden><div class="sectionhead"><div><h2>Pagos pendientes de meses anteriores</h2><div class="sub">Avisos de meses anteriores que todavía no se cobraron.</div></div></div><div id="homeArrearsList" class="list"></div></div><div class="section"><div class="sectionhead"><div><h2>Alumnos</h2><div class="sub">Cada ficha reúne horarios, pagos y recuperaciones.</div></div><div class="actions" style="margin:0"><button class="btn small secondary" onclick="openModal('activity')">+ Escuelita</button><button class="btn small" onclick="openModal('student')">+ Alumno</button></div></div><details class="home-list-disclosure" id="homeStudentDisclosure"><summary><b>Lista de alumnos</b><span class="disclosure-count" id="homeStudentCount">0 alumnos</span></summary><div class="home-list-content"><div class="toolbar"><input class="search" id="homeStudentSearch" placeholder="Buscar alumno..." oninput="renderHomeStudents()"></div><div id="homeStudentList" class="list"></div></div></details></div><div class="section"><details class="home-list-disclosure" id="homeDebtDisclosure"><summary><b>Horas por recuperar</b><span class="disclosure-count" id="homeDebtCount">0 h</span></summary><div class="home-list-content" id="homeDebt"></div></details></div><div class="section" id="homeActivities"></div></section>
 <section id="students" class="screen"><div class="sectionhead"><div><h2>Mi semana</h2><div class="sub">Agenda semanal de clases</div></div></div><div class="week-toolbar"><button class="btn secondary small" onclick="changeClassWeek(-1)" aria-label="Semana anterior">‹</button><b id="classWeekTitle"></b><span class="muted" id="classWeekRange"></span><button class="btn secondary small" onclick="changeClassWeek(1)" aria-label="Semana siguiente">›</button><button class="btn small" onclick="goToCurrentWeek()">Hoy</button></div><div id="classWeekDays" class="week-days"></div><div class="class-list-date selected-day-title" id="classWeekDayTitle"></div><div id="classWeekList" class="list"></div></section>
@@ -588,6 +597,13 @@ function openRainDebtOverview(studentId){
   const members=student?studentGroupMembers(student):[];
   entries=members.length?[{members,primary:members.slice().sort((a,b)=>a.name.localeCompare(b.name,'es'))[0],hours:Math.max(...members.map(pendingHours)),label:members.length>1?studentGroupLabel(members):student.name,group:members.length>1}]:[];
  }else entries=pendingDebtEntries();
+ const visibleNames=studentId?new Set(entries.flatMap(entry=>entry.members.map(member=>String(member.name)))):null;
+ const registeredRecoveries=(data.classes||[]).filter(c=>c.plannedRecovery&&(!visibleNames||visibleNames.has(String(c.student)))).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.time||'').localeCompare(String(b.time||'')));
+ const registeredHtml=registeredRecoveries.length?'<details class="home-list-disclosure recovery-records" open><summary><b>Reprogramaciones registradas</b><span class="disclosure-count">'+registeredRecoveries.length+' '+(registeredRecoveries.length===1?'recuperación':'recuperaciones')+'</span></summary><div class="home-list-content">'+registeredRecoveries.map(c=>{
+  const owner=data.students.find(x=>String(x.name)===String(c.student)),group=new RegExp('\\[Grupo:([^\\]]+)\\]').exec(String(c.note||'')),label=group?group[1]:(owner?.name||c.student||'Alumno'),date=c.date?new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}):'Sin fecha',done=isRecoveryCompleted(c);
+  const edit=done?'':'<button class="btn secondary small" onclick="editScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(owner?.id||'')+'&quot;,&quot;'+escapePlanText(c.recoveryRainId||'')+'&quot;)">Cambiar fecha y duración</button>';
+  return '<div class="card row between recovery-record"><div><b>'+escapePlanText(label)+'</b><div class="muted">'+escapePlanText(date)+' · '+escapePlanText(c.time||'')+' · '+Number(c.duration||1)+' h · '+(done?'Recuperada':'Programada')+'</div></div><div class="actions recovery-record-actions" style="margin:0">'+edit+'<button class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(owner?.id||'')+'&quot;)">Borrar recuperación</button></div></div>';
+ }).join('')+'</div></details>':'';
  const content=entries.map(entry=>{
   const rows=entry.group?groupRainDebtRows(entry.members):rainDebtRows(entry.primary);
   return '<div class="debt-student"><h3>'+entry.label+(entry.group?' · grupal':'')+'</h3>'+rows.map(item=>{
@@ -595,11 +611,11 @@ function openRainDebtOverview(studentId){
    const time=item.time||'Hora sin registrar';
    const scheduledText=item.scheduled?.length?item.scheduled.map(c=>new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})+(c.time?' · '+c.time:'')).join(', '):'';
    const statusText=scheduledText?' · Programada para recuperar '+scheduledText:'';
-   const action='<div class="actions recovery-actions" style="margin:0">'+(item.availableHours>0?'<button class="btn small" onclick="openRainRecovery(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">'+(item.scheduled?.length?'Programar otra parte':'Programar recuperación')+'</button>':'')+(item.scheduled||[]).map(c=>'<button class="btn secondary small" onclick="editScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Cambiar fecha y duración</button><button class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;)">Eliminar reprogramación</button>').join('')+(item.scheduled?.length>1?'<button class="btn small" onclick="unifyScheduledRecoveries(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Unificar reprogramaciones</button>':'')+'</div>';
+   const action='<div class="actions recovery-actions" style="margin:0">'+(item.availableHours>0?'<button class="btn small" onclick="openRainRecovery(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">'+(item.scheduled?.length?'Programar otra parte':'Programar recuperación')+'</button>':'')+(item.scheduled?.length>1?'<button class="btn small" onclick="unifyScheduledRecoveries(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Unificar reprogramaciones</button>':'')+'</div>';
    return '<div class="card debt-item"><div><b>'+date+' · '+time+'</b><div class="muted">'+item.hours+' h pendientes'+(entry.group?' · una sola recuperación para el grupo':'')+statusText+'</div></div>'+action+'</div>';
   }).join('')+'</div>';
  }).join('');
- sheet.innerHTML='<div class="recovery-overview-heading"><div><h2>Horas por recuperar</h2><div class="sub">Podés dividir una suspensión en varios días o unificar sus reprogramaciones; las duraciones van en bloques de media hora.</div></div></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
+ sheet.innerHTML='<div class="recovery-overview-heading"><div><h2>Horas por recuperar</h2><div class="sub">Podés dividir o unificar una recuperación. Para cambiarla o borrarla, usá “Reprogramaciones registradas”.</div></div></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>')+registeredHtml;
 }
 
 function unifyScheduledRecoveries(studentId,rainId){
@@ -667,7 +683,7 @@ async function deleteScheduledRecovery(classId,studentId){
  const recovery=data.classes.find(c=>String(c.id)===String(classId)&&c.plannedRecovery);
  if(!recovery)return;
  const student=data.students.find(x=>String(x.id)===String(studentId));
- if(!confirm('¿Eliminar esta reprogramación? Se borrará el evento de Calendar y esas horas volverán a quedar pendientes para programarlas de nuevo.'))return;
+ if(!confirm('¿Borrar esta recuperación del registro? Se quitará de Calendar y, si sus horas ya se habían contabilizado como recuperadas, volverán a quedar pendientes.'))return;
  let eventId=recovery.googleEventId||null,remoteDeleted=false;
  try{
   if(!eventId&&isUuid(recovery.id)){
@@ -690,7 +706,7 @@ async function deleteScheduledRecovery(classId,studentId){
   }
   closeModal();
   if(student)openRainDebtOverview(student.id);else openRainDebtOverview();
-  showSaveNotice(calendarDone?'Fecha quitada. Las horas volvieron a quedar pendientes.': 'Fecha quitada y horas pendientes. La eliminación de Calendar quedó en cola y se reintentará al conectar.');
+  showSaveNotice(calendarDone?'Recuperación borrada. Las horas volvieron a quedar pendientes.':'Recuperación borrada; la eliminación de Calendar quedó en cola y se reintentará al conectar.');
   if(saved===false)console.warn('La fecha fue eliminada, pero hubo otro error al guardar los datos relacionados.');
  }catch(error){
   if(eventId&&!remoteDeleted){try{await removeQueuedGoogleEventDeletion(eventId)}catch(queueError){console.error('No se pudo limpiar la cola de eventos:',queueError)}}
