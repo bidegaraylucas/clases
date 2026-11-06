@@ -583,13 +583,50 @@ function openRainDebtOverview(studentId){
    const time=item.time||'Hora sin registrar';
    const scheduledText=item.scheduled?.length?item.scheduled.map(c=>new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'})+(c.time?' · '+c.time:'')).join(', '):'';
    const statusText=scheduledText?' · Programada para recuperar '+scheduledText:'';
-   const action='<div class="actions recovery-actions" style="margin:0">'+(item.availableHours>0?'<button class="btn small" onclick="openRainRecovery(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">'+(item.scheduled?.length?'Programar otra parte':'Programar recuperación')+'</button>':'')+(item.scheduled||[]).map(c=>'<button class="btn secondary small" onclick="editScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Cambiar fecha y duración</button><button class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;)">Quitar fecha</button>').join('')+'</div>';
+   const action='<div class="actions recovery-actions" style="margin:0">'+(item.availableHours>0?'<button class="btn small" onclick="openRainRecovery(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">'+(item.scheduled?.length?'Programar otra parte':'Programar recuperación')+'</button>':'')+(item.scheduled||[]).map(c=>'<button class="btn secondary small" onclick="editScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Cambiar fecha y duración</button><button class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+c.id+'&quot;,&quot;'+entry.primary.id+'&quot;)">Eliminar reprogramación</button>').join('')+(item.scheduled?.length>1?'<button class="btn small" onclick="unifyScheduledRecoveries(&quot;'+entry.primary.id+'&quot;,&quot;'+item.id+'&quot;)">Unificar reprogramaciones</button>':'')+'</div>';
    return '<div class="card debt-item"><div><b>'+date+' · '+time+'</b><div class="muted">'+item.hours+' h pendientes'+(entry.group?' · una sola recuperación para el grupo':'')+statusText+'</div></div>'+action+'</div>';
   }).join('')+'</div>';
  }).join('');
- sheet.innerHTML='<div class="row between"><div><h2>Horas por recuperar</h2><div class="sub">Podés repartir cada recuperación en varios días, en bloques de media hora.</div></div><button class="btn secondary small" onclick="closeModal()">Cerrar</button></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
+ sheet.innerHTML='<div class="row between"><div><h2>Horas por recuperar</h2><div class="sub">Podés dividir una suspensión en varios días o unificar sus reprogramaciones; las duraciones van en bloques de media hora.</div></div><button class="btn secondary small" onclick="closeModal()">Cerrar</button></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
 }
 
+function unifyScheduledRecoveries(studentId,rainId){
+ const student=data.students.find(x=>String(x.id)===String(studentId));if(!student)return;
+ const members=studentGroupMembers(student),group=members.length>1,rows=group?groupRainDebtRows(members):rainDebtRows(student),item=rows.find(x=>String(x.id)===String(rainId));
+ const scheduled=(item?.scheduled||[]).filter(c=>!isRecoveryCompleted(c)).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.time||'').localeCompare(String(b.time||'')));
+ if(scheduled.length<2){alert('Esta suspensión no tiene varias reprogramaciones pendientes para unificar.');return}
+ const total=scheduled.reduce((sum,c)=>sum+Number(c.duration||0),0),first=scheduled[0],sheet=document.getElementById('sheet');
+ document.getElementById('modal').classList.add('show');
+ sheet.innerHTML='<h2>Unificar reprogramaciones</h2><p class="sub">'+(group?'Grupo: '+escapePlanText(studentGroupLabel(members))+'<br>':'')+'Se van a combinar '+scheduled.length+' reprogramaciones de esta suspensión en una sola clase de <b>'+total+' h</b>. Elegí cuándo hacerla; las fechas anteriores se borrarán de Calendar.</p><form class="form" onsubmit="saveUnifiedRecovery(event)"><input type="hidden" name="studentId" value="'+escapePlanText(student.id)+'"><input type="hidden" name="rainId" value="'+escapePlanText(rainId)+'"><input type="hidden" name="keepId" value="'+escapePlanText(first.id)+'"><input type="hidden" name="removeIds" value="'+escapePlanText(scheduled.slice(1).map(c=>String(c.id)).join(','))+'"><label>Duración total<input value="'+total+' h" readonly></label><label>Fecha<input type="date" name="date" value="'+escapePlanText(first.date||weekDateKey(new Date()))+'" required></label><label>Hora<input type="time" name="time" value="'+escapePlanText(first.time||'')+'" required></label><div class="actions"><button type="button" class="btn secondary" onclick="openRainDebtOverview(&quot;'+escapePlanText(student.id)+'&quot;)">Cancelar</button><button class="btn" type="submit">Unificar</button></div></form>';
+}
+async function saveUnifiedRecovery(e){
+ e.preventDefault();const v=vals(e.target),keep=data.classes.find(c=>String(c.id)===String(v.keepId)&&c.plannedRecovery),removeIds=String(v.removeIds||'').split(',').filter(Boolean),remove=removeIds.map(id=>data.classes.find(c=>String(c.id)===id)).filter(c=>c?.plannedRecovery);
+ if(!keep||!remove.length||!v.date||!v.time){alert('No se encontraron todas las reprogramaciones para unificarlas. Actualizá la app e intentá de nuevo.');return}
+ const student=data.students.find(x=>String(x.id)===String(v.studentId)),members=student?studentGroupMembers(student):[],rows=members.length>1?groupRainDebtRows(members):student?rainDebtRows(student):[],item=rows.find(x=>String(x.id)===String(v.rainId)),scheduled=(item?.scheduled||[]).filter(c=>!isRecoveryCompleted(c)),total=scheduled.reduce((sum,c)=>sum+Number(c.duration||0),0);
+ const scheduledIds=new Set(scheduled.map(c=>String(c.id)));if(scheduled.length!==remove.length+1||!scheduledIds.has(String(keep.id))||removeIds.some(id=>!scheduledIds.has(String(id)))){alert('Las reprogramaciones cambiaron. Cerrá esta ventana y revisá las horas pendientes antes de continuar.');return}
+ const ids=remove.map(c=>String(c.id)),eventIds=new Map(remove.map(c=>[String(c.id),c.googleEventId||null]));
+ try{
+  if(currentSession){
+   const missing=remove.filter(c=>!eventIds.get(String(c.id))&&isUuid(c.id)).map(c=>c.id);
+   if(missing.length){const {data:remote,error}=await supabaseClient.from('clases').select('id,google_event_id').in('id',missing);if(error)throw error;(remote||[]).forEach(row=>eventIds.set(String(row.id),row.google_event_id||null))}
+   for(const id of ids){const eventId=eventIds.get(id);if(eventId)await queueGoogleEventDeletion(eventId)}
+   const remoteIds=ids.filter(isUuid);
+   if(remoteIds.length){const {error}=await supabaseClient.from('clases').delete().in('id',remoteIds);if(error)throw error}
+  }
+  keep.date=v.date;keep.time=v.time;keep.duration=total;
+  data.classes=data.classes.filter(c=>!ids.includes(String(c.id)));
+  localStorage.setItem(KEY,JSON.stringify(data));
+  closeModal();showSaveNotice('Unificando las reprogramaciones…');
+  const saved=await save();
+  if(saved===false){showSaveNotice('La unificación quedó guardada localmente, pero falta sincronizarla. Revisá la conexión.');return}
+  let calendarDone=true;
+  if(currentSession&&googleToken&&googleCalendarId){try{calendarDone=await flushGoogleEventDeletionQueue()}catch(error){console.warn('La eliminación de eventos quedó pendiente:',error);calendarDone=false}}
+  openRainDebtOverview(student?.id);
+  showSaveNotice(calendarDone?'Reprogramaciones unificadas en una sola clase de '+total+' h.':'Reprogramaciones unificadas; Calendar actualizará las fechas anteriores al reconectar.');
+ }catch(error){
+  alert('No se pudo unificar la recuperación: '+(error.message||error));
+ }
+}
 function editScheduledRecovery(classId,studentId,rainId){
  const recovery=data.classes.find(c=>String(c.id)===String(classId)&&c.plannedRecovery);
  if(!recovery)return;
@@ -618,7 +655,7 @@ async function deleteScheduledRecovery(classId,studentId){
  const recovery=data.classes.find(c=>String(c.id)===String(classId)&&c.plannedRecovery);
  if(!recovery)return;
  const student=data.students.find(x=>String(x.id)===String(studentId));
- if(!confirm('¿Quitar esta fecha de recuperación? La duración volverá a quedar pendiente y se borrará el evento de Calendar.'))return;
+ if(!confirm('¿Eliminar esta reprogramación? Se borrará el evento de Calendar y esas horas volverán a quedar pendientes para programarlas de nuevo.'))return;
  let eventId=recovery.googleEventId||null,remoteDeleted=false;
  try{
   if(!eventId&&isUuid(recovery.id)){
