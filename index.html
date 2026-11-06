@@ -376,9 +376,16 @@ const GOOGLE_REDIRECT_URI='https://bidegaraylucas.github.io/clases/';
 const GOOGLE_TOKEN_FUNCTION=SUPABASE_URL+'/functions/v1/google-calendar-token';
 let googleToken=null; let googleCalendarId=null; let googleConnectionError=false; let googleSyncTimer=null; let googleSyncInFlight=null; let googleSyncPending=false;
 const KEY='tennisCoachV04';const monthKey=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};const seed={students:[],classes:[],rain:[],cancellations:[],payments:[],rates:{class:12000,individual:90000,group:60000},plans:[],activities:[],fixedOverrides:[]};
-let data=JSON.parse(localStorage.getItem(KEY)||'null')||seed;if(!Array.isArray(data.activities))data.activities=[];if(!Array.isArray(data.cancellations))data.cancellations=[];if(!Array.isArray(data.fixedOverrides))data.fixedOverrides=[];
+let data;
+try{
+ const cached=JSON.parse(localStorage.getItem(KEY)||'null');
+ data=cached&&typeof cached==='object'&&!Array.isArray(cached)?{...seed,...cached}:{...seed};
+}catch(error){console.warn('No se pudo leer la copia local; se volverán a cargar los datos guardados:',error);data={...seed}}
+for(const key of ['students','classes','rain','cancellations','payments','plans','activities','fixedOverrides'])if(!Array.isArray(data[key]))data[key]=[];
+data.rates={...seed.rates,...(data.rates&&typeof data.rates==='object'?data.rates:{})};
+data.students=data.students.filter(x=>x&&typeof x==='object');
+data.classes=data.classes.filter(x=>x&&typeof x==='object');
 data.students.forEach(x=>{if(x.rainHours==null)x.rainHours=0;if(x.recoveredHours==null)x.recoveredHours=0});
-
 data.classes.forEach(x=>{if(x.duration==null)x.duration=1;if(x.type==null)x.type='Normal';if(x.rain==null)x.rain=false});
 function localDateKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function shiftMonthKey(key,delta){const [year,month]=String(key||monthKey()).split('-').map(Number),d=new Date(year,month-1+(delta||0),1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
@@ -678,7 +685,7 @@ function openRainDebtOverview(studentId){
    const date=c.date?new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}):'Sin fecha',duration=Number(c.duration??1);
    return '<div class="card row between recovery-scheduled"><div><b>'+escapePlanText(date)+' · '+escapePlanText(c.time||'')+'</b><div class="muted">'+duration.toLocaleString('es-AR')+' h'+(entry.group?' · grupal':'')+'</div></div><div class="actions recovery-actions" style="margin:0"><button type="button" class="btn secondary small" onclick="editScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;,&quot;__all__&quot;)">Cambiar fecha y duración</button><button type="button" class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;)">Borrar recuperación</button></div></div>';}).join('')+'</div>':'';
   const scheduleButton=pending>0?'<button type="button" class="btn small" data-action="program-recovery" data-student-id="'+escapePlanText(entry.primary.id)+'">Programar recuperación</button>':'';
-  return '<div class="debt-student recovery-ledger"><div class="row between recovery-ledger-heading"><h3>'+escapePlanText(entry.label)+(entry.group?' · grupal':'')+'</h3></div><div class="card recovery-ledger-total"><div><span class="muted">Total pendiente</span><b>'+pending.toLocaleString('es-AR')+' h</b></div>'+scheduleButton+'</div><div class="recovery-origins"><b>Suspensiones originales</b>'+(origins||'<div class="muted">No hay fechas de origen registradas.</div>')+'</div>'+scheduledHtml+'</div>';
+  return '<div class="debt-student recovery-ledger"><div class="row between recovery-ledger-heading"><h3>'+escapePlanText(entry.label)+(entry.group?' · grupal':'')+'</h3></div><div class="card recovery-ledger-total"><div><span class="muted">Total pendiente</span><b>'+pending.toLocaleString('es-AR')+' h</b><small class="muted">'+available.toLocaleString('es-AR')+' h libres para programar</small></div>'+scheduleButton+'</div><div class="recovery-origins"><b>Suspensiones originales</b>'+(origins||'<div class="muted">No hay fechas de origen registradas.</div>')+'</div>'+scheduledHtml+'</div>';
  }).join('');
  sheet.innerHTML='<div class="recovery-overview-heading"><div><h2>Horas por recuperar</h2><div class="sub">El saldo se reúne por alumno o grupo; las suspensiones originales quedan detalladas abajo.</div></div></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
  sheet.querySelectorAll('[data-action="program-recovery"]').forEach(button=>button.addEventListener('click',event=>{
@@ -695,6 +702,7 @@ function openRainRecovery(studentId,rainId){
  const sheet=document.getElementById('sheet');document.getElementById('modal').classList.add('show');
  if(available<=0){
   sheet.innerHTML='<h2>Programar recuperación</h2><p class="sub">Todavía quedan '+pending.toLocaleString('es-AR')+' h pendientes, pero ya están asignadas a otras recuperaciones programadas. Podés modificar o borrar una de esas fechas para liberar horas.</p><div class="actions"><button type="button" class="btn secondary" data-action="recovery-back">Volver</button></div>';
+  sheet.querySelector('[data-action="recovery-back"]').addEventListener('click',()=>openRainDebtOverview(student.id));
   return;
  }
  const origins=targetRows.filter(row=>Number(row.availableHours||0)>0).map(row=>{
@@ -2354,7 +2362,7 @@ let appEntered=false; async function enterApp(){
  authCard?.classList.add('loading');
  authGate.style.display='flex';authLoading.textContent='Cargando datos…';authLoading.style.display='block';
  try{
-  const loaded=await Promise.race([loadFromSupabase(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('La carga de datos tardó demasiado.')),10000))]);
+  const loaded=await Promise.race([loadFromSupabase(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('La carga de datos demoró más de 30 segundos.')),30000))]);
   if(!loaded)throw new Error('No se pudieron cargar los datos.');
  }catch(e){
   console.error('Carga inicial:',e);showAuthError('La sesión se inició, pero no se pudieron cargar los datos: '+(e.message||e));
@@ -2369,8 +2377,17 @@ let appEntered=false; async function enterApp(){
  catch(e){console.error('Google OAuth callback:',e);alert('No se pudo conectar Google Calendar: '+(e.message||e));window.history.replaceState({},document.title,window.location.pathname)}
  renderAll();
 }
-async function initAuth(){authLoading.style.display='block';try{const {data:{session}}=await supabaseClient.auth.getSession();currentSession=session;if(session){await enterApp()}else{authGate.style.display='flex'}}catch(err){showAuthError('No se pudo comprobar la sesión: '+(err.message||err));authGate.style.display='flex'}finally{authLoading.style.display='none'}}
-authForm.addEventListener('submit',async e=>{e.preventDefault();hideAuthError();authLoading.textContent='Iniciando sesión…';authLoading.style.display='block';const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});authLoading.style.display='none';if(error){showAuthError(error.message.includes('Email not confirmed')?'El email todavía no está confirmado en Supabase.':error.message);return}if(data.session)enterApp()});
+async function initAuth(){authLoading.textContent='Comprobando sesión…';authLoading.style.display='block';try{const result=await Promise.race([supabaseClient.auth.getSession(),new Promise((_,reject)=>setTimeout(()=>reject(new Error('La comprobación tardó demasiado. Revisá tu conexión e intentá iniciar sesión.')),15000))]);const session=result?.data?.session||null;currentSession=session;if(session){await enterApp()}else{authGate.style.display='flex'}}catch(err){showAuthError('No se pudo comprobar la sesión: '+(err.message||err));authGate.style.display='flex'}finally{authLoading.style.display='none'}}
+authForm.addEventListener('submit',async e=>{
+ e.preventDefault();hideAuthError();authLoading.textContent='Iniciando sesión…';authLoading.style.display='block';
+ const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
+ try{
+  const {data:result,error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){showAuthError(error.message.includes('Email not confirmed')?'El email todavía no está confirmado en Supabase.':error.message);return}
+  if(result?.session){currentSession=result.session;await enterApp()}
+ }catch(error){showAuthError('No se pudo completar el inicio de sesión: '+(error.message||error))}
+ finally{authLoading.style.display='none'}
+});
 supabaseClient.auth.onAuthStateChange((event,session)=>{currentSession=session;if(session && event==='SIGNED_IN')enterApp()});
 function refreshRecoveryDashboard(){if(appEntered&&!document.hidden)renderAll()}
 window.addEventListener('focus',refreshRecoveryDashboard);
