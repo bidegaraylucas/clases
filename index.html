@@ -684,7 +684,7 @@ function openRainDebtOverview(studentId){
   const scheduledHtml=scheduled.length?'<div class="recovery-scheduled-list"><h4>Recuperaciones programadas</h4>'+scheduled.map(c=>{
    const date=c.date?new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}):'Sin fecha',duration=Number(c.duration??1);
    return '<div class="card row between recovery-scheduled"><div><b>'+escapePlanText(date)+' · '+escapePlanText(c.time||'')+'</b><div class="muted">'+duration.toLocaleString('es-AR')+' h'+(entry.group?' · grupal':'')+'</div></div><div class="actions recovery-actions" style="margin:0"><button type="button" class="btn secondary small" onclick="editScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;,&quot;__all__&quot;)">Cambiar fecha y duración</button><button type="button" class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;)">Borrar recuperación</button></div></div>';}).join('')+'</div>':'';
-  const scheduleButton=pending>0?'<button type="button" class="btn small" data-action="program-recovery" data-student-id="'+escapePlanText(entry.primary.id)+'" aria-label="Programar recuperación para '+escapePlanText(entry.label)+'">Programar recuperación</button>':'';
+  const scheduleButton=pending>0?'<button type="button" class="btn small" onclick="openRainRecovery(&quot;'+escapePlanText(entry.primary.id)+'&quot;,&quot;__all__&quot;)" aria-label="Programar recuperación para '+escapePlanText(entry.label)+'">Programar recuperación</button>':'';
   return '<div class="debt-student recovery-ledger"><div class="row between recovery-ledger-heading"><h3>'+escapePlanText(entry.label)+(entry.group?' · grupal':'')+'</h3></div><div class="card recovery-ledger-total"><div><span class="muted">Total pendiente</span><b>'+pending.toLocaleString('es-AR')+' h</b><small class="muted">'+available.toLocaleString('es-AR')+' h libres para programar</small></div>'+scheduleButton+'</div><div class="recovery-origins"><b>Suspensiones originales</b>'+(origins||'<div class="muted">No hay fechas de origen registradas.</div>')+'</div>'+scheduledHtml+'</div>';
  }).join('');
  sheet.innerHTML='<div class="recovery-overview-heading"><div><h2>Horas por recuperar</h2><div class="sub">El saldo se reúne por alumno o grupo; las suspensiones originales quedan detalladas abajo.</div></div></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
@@ -2391,14 +2391,5 @@ window.addEventListener('pageshow',refreshRecoveryDashboard);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshRecoveryDashboard()});
 function scheduleRecoveryDayRefresh(){clearTimeout(window.recoveryRefreshTimer);const now=new Date(),midnight=new Date(now);midnight.setHours(24,0,5,0);let next=midnight.getTime();for(const c of data.classes||[]){if(!c.plannedRecovery)continue;const end=recoveryEndTime(c);if(end){const refreshAt=end.getTime()+60000;if(refreshAt>now.getTime()&&refreshAt<next)next=refreshAt}}window.recoveryRefreshTimer=setTimeout(()=>{refreshRecoveryDashboard();if(document.getElementById('modal')?.classList.contains('show')&&document.getElementById('sheet')?.textContent.includes('Horas por recuperar'))openRainDebtOverview();else if(!appEntered)scheduleRecoveryDayRefresh()},Math.max(1000,next-now.getTime()));}
 scheduleRecoveryDayRefresh();
-window.openRainRecovery=openRainRecovery;
-document.addEventListener('click',event=>{
- const target=event.target instanceof Element?event.target:event.target?.parentElement;
- const button=target?.closest('button[data-action="program-recovery"]');
- if(!button)return;
- event.preventDefault();event.stopImmediatePropagation();
- try{window.openRainRecovery(button.dataset.studentId,'__all__')}
- catch(error){console.error('No se pudo abrir la programación de recuperación:',error);showSaveNotice('No se pudo abrir el formulario de recuperación. Revisá la pantalla e intentá otra vez.')}
-},true);
 initAuth();
 </script></body></html>
