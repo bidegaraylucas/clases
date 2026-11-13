@@ -1708,6 +1708,7 @@ async function syncFixedSchedulesToGoogle(){
   // Cada combinación día + hora + duración genera una serie semanal independiente.
   const groups=new Map();
   for(const st of data.students){
+    if(isStudentPausedForMonth(st))continue;
     const raw=st.fixedSchedule;
     const schedules=Array.isArray(raw)?raw:(raw?.active?[raw]:[]);
     for(const sch of schedules){
@@ -1910,7 +1911,7 @@ function buildCalendarChangeSet(before,after){
     full:false,
     classIds:changedClasses,
     cleanup:JSON.stringify(names(before))!==JSON.stringify(names(after)),
-    fixedSchedules:JSON.stringify(studentCalendar(before))!==JSON.stringify(studentCalendar(after)),
+    fixedSchedules:JSON.stringify(studentCalendar(before))!==JSON.stringify(studentCalendar(after))||JSON.stringify(before.monthlyPauses||[])!==JSON.stringify(after.monthlyPauses||[]),
     fixedSuspensions:JSON.stringify(fixedRecords(before))!==JSON.stringify(fixedRecords(after))||JSON.stringify(before.fixedOverrides||[])!==JSON.stringify(after.fixedOverrides||[]),
     activities:JSON.stringify(before.activities||[])!==JSON.stringify(after.activities||[])
   };
