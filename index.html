@@ -704,7 +704,7 @@ function openRainDebtOverview(studentId){
 const scheduledHtml=scheduled.length?'<div class="recovery-scheduled-list"><h4>Recuperaciones programadas</h4>'+scheduled.map(c=>{
    const date=c.date?new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}):'Sin fecha',duration=Number(c.duration??1);
    return '<div class="card row between recovery-scheduled"><div><b>'+escapePlanText(date)+' · '+escapePlanText(c.time||'')+'</b><div class="muted">'+duration.toLocaleString('es-AR')+' h'+(entry.group?' · grupal':'')+'</div></div><div class="actions recovery-actions" style="margin:0"><button type="button" class="btn secondary small" onclick="editScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;,&quot;__all__&quot;)">Cambiar fecha y duración</button><button type="button" class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;)">Borrar recuperación</button></div></div>';}).join('')+'</div>':'';
-  const scheduleButton=pending>0?(available>0?'<details class="recovery-program"><summary class="btn small"><span class="recovery-summary-open">Preparar recuperación</span><span class="recovery-summary-close">Ocultar formulario</span></summary><form class="form recovery-program-form" data-action="save-recovery"><input type="hidden" name="studentId" value="'+escapePlanText(entry.primary.id)+'"><input type="hidden" name="rainId" value="'+escapePlanText(rainIds)+'"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+available+'" value="'+available+'" required></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required></label><label>Detalle<input name="note" placeholder="Recuperación de clases suspendidas"></label><div class="actions"><button class="btn" type="submit">Confirmar recuperación</button></div></form></details>':'<span class="muted">Sin horas libres para programar</span>'): '';
+  const scheduleButton=pending>0?(available>0?'<details class="recovery-program"><summary class="btn small"><span class="recovery-summary-open">Preparar recuperación</span><span class="recovery-summary-close">Ocultar formulario</span></summary><form class="form recovery-program-form" data-action="save-recovery"><input type="hidden" name="studentId" value="'+escapePlanText(entry.primary.id)+'"><input type="hidden" name="rainId" value="'+escapePlanText(rainIds)+'"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+available+'" value="'+available+'" required></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required><small class="muted">Si coincide con el horario fijo del alumno, Calendar lo mostrará como una sola recuperación.</small></label><label>Detalle<input name="note" placeholder="Recuperación de clases suspendidas"></label><div class="actions"><button class="btn" type="submit">Confirmar recuperación</button></div></form></details>':'<span class="muted">Sin horas libres para programar</span>'): '';
   return '<div class="debt-student recovery-ledger"><div class="row between recovery-ledger-heading"><h3>'+escapePlanText(entry.label)+(entry.group?' · grupal':'')+'</h3></div><div class="card recovery-ledger-total"><div><span class="muted">Total pendiente</span><b>'+pending.toLocaleString('es-AR')+' h</b><small class="muted">'+available.toLocaleString('es-AR')+' h libres para programar</small></div>'+scheduleButton+'</div><div class="recovery-origins"><b>Suspensiones originales</b>'+(origins||'<div class="muted">No hay fechas de origen registradas.</div>')+'</div>'+scheduledHtml+recentHtml+'</div>';
  }).join('');
  sheet.innerHTML='<div class="recovery-overview-heading"><div><h2>Horas por recuperar</h2><div class="sub">El saldo se reúne por alumno o grupo; las suspensiones originales quedan detalladas abajo.</div></div></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
@@ -726,7 +726,7 @@ function openRainRecovery(studentId,rainId){
   const date=row.date?new Date(row.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}):'Fecha sin registrar';
   return '<div class="recovery-origin"><span>'+escapePlanText(date)+(row.time?' · '+escapePlanText(row.time):'')+'</span><span>'+Number(row.availableHours||0).toLocaleString('es-AR')+' h libres</span></div>';
  }).join('');
- sheet.innerHTML='<h2>Programar recuperación</h2><p class="sub">'+(group?'Grupo: '+escapePlanText(studentGroupLabel(members))+'<br>':'')+'Horas pendientes: <b>'+pending.toLocaleString('es-AR')+' h</b><br>Podés programar cualquier cantidad en bloques de media hora, hasta '+available.toLocaleString('es-AR')+' h libres.</p><div class="recovery-origins"><b>Origen de las horas disponibles</b>'+origins+'</div><form class="form" data-action="save-recovery"><input type="hidden" name="studentId" value="'+escapePlanText(student.id)+'"><input type="hidden" name="rainId" value="'+(all?'__all__':escapePlanText(rainId))+'"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+available+'" value="'+available+'" required></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required></label><label>Detalle<input name="note" placeholder="Recuperación de clases suspendidas"></label><div class="actions"><button type="button" class="btn secondary" data-action="recovery-back">Volver</button><button class="btn" type="submit">Programar recuperación</button></div></form>';
+ sheet.innerHTML='<h2>Programar recuperación</h2><p class="sub">'+(group?'Grupo: '+escapePlanText(studentGroupLabel(members))+'<br>':'')+'Horas pendientes: <b>'+pending.toLocaleString('es-AR')+' h</b><br>Podés programar cualquier cantidad en bloques de media hora, hasta '+available.toLocaleString('es-AR')+' h libres.</p><div class="recovery-origins"><b>Origen de las horas disponibles</b>'+origins+'</div><form class="form" data-action="save-recovery"><input type="hidden" name="studentId" value="'+escapePlanText(student.id)+'"><input type="hidden" name="rainId" value="'+(all?'__all__':escapePlanText(rainId))+'"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+available+'" value="'+available+'" required></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required><small class="muted">Si coincide con el horario fijo del alumno, Calendar lo mostrará como una sola recuperación.</small></label><label>Detalle<input name="note" placeholder="Recuperación de clases suspendidas"></label><div class="actions"><button type="button" class="btn secondary" data-action="recovery-back">Volver</button><button class="btn" type="submit">Programar recuperación</button></div></form>';
  sheet.querySelector('[data-action="save-recovery"]').addEventListener('submit',saveRainRecovery);
  sheet.querySelector('[data-action="recovery-back"]').addEventListener('click',()=>openRainDebtOverview(student.id));
 }
@@ -803,6 +803,7 @@ async function deleteScheduledRecovery(classId,studentId){
   if(eventId&&googleToken&&googleCalendarId){
    try{calendarDone=await flushGoogleEventDeletionQueue()}catch(error){console.warn('La eliminación del evento quedó pendiente:',error);calendarDone=false}
   }
+  queueGoogleCalendarSync(0,{fixedSuspensions:true});
   closeModal();
   if(student)openRainDebtOverview(student.id);else openRainDebtOverview();
   showSaveNotice(calendarDone?'Bloque borrado. Las horas volvieron a quedar pendientes.':'Bloque borrado; la eliminación de Calendar quedó en cola y se reintentará al conectar.');
@@ -823,7 +824,7 @@ function openRainRecovery(studentId,rainId){
  const rows=group?groupRainDebtRows(members):rainDebtRows(student),item=rows.find(x=>String(x.id)===String(rainId));if(!item)return;
  const date=item.date?new Date(item.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'}):'Fecha no registrada';
  const sheet=document.getElementById('sheet');document.getElementById('modal').classList.add('show');
- sheet.innerHTML='<h2>Programar recuperación</h2><p class="sub">'+(group?'Grupo: '+studentGroupLabel(members)+'<br>':'')+'Suspensión: '+date+' · '+(item.time||'hora no registrada')+'<br>Pendiente: <b>'+item.hours+' h</b></p><form class="form" onsubmit="saveRainRecovery(event)"><input type="hidden" name="studentId" value="'+student.id+'"><input type="hidden" name="rainId" value="'+item.id+'"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+item.availableHours+'" value="'+item.availableHours+'" required><small class="muted">Admite 30 minutos y múltiplos de media hora.</small></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required></label><label>Detalle<input name="note" placeholder="Recuperación de lluvia"></label><div class="actions"><button type="button" class="btn secondary" onclick="openRainDebtOverview(&quot;'+student.id+'&quot;)">Volver</button><button class="btn" type="submit">Programar recuperación</button></div></form>';
+ sheet.innerHTML='<h2>Programar recuperación</h2><p class="sub">'+(group?'Grupo: '+studentGroupLabel(members)+'<br>':'')+'Suspensión: '+date+' · '+(item.time||'hora no registrada')+'<br>Pendiente: <b>'+item.hours+' h</b></p><form class="form" onsubmit="saveRainRecovery(event)"><input type="hidden" name="studentId" value="'+student.id+'"><input type="hidden" name="rainId" value="'+item.id+'"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+item.availableHours+'" value="'+item.availableHours+'" required><small class="muted">Admite 30 minutos y múltiplos de media hora.</small></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required><small class="muted">Si coincide con el horario fijo del alumno, Calendar lo mostrará como una sola recuperación.</small></label><label>Detalle<input name="note" placeholder="Recuperación de lluvia"></label><div class="actions"><button type="button" class="btn secondary" onclick="openRainDebtOverview(&quot;'+student.id+'&quot;)">Volver</button><button class="btn" type="submit">Programar recuperación</button></div></form>';
 }
 function maxSchedulableRecoveryHours(student){return Math.max(0,...rainDebtRows(student).map(r=>Number(r.availableHours||0)));}
 function scheduleStudentRecovery(student,date,time,hours,note){const row=rainDebtRows(student).find(r=>Number(r.availableHours||0)>=hours);if(!row)return false;data.classes.push({id:newUuid(),student:student.name,date,time:time||'',duration:hours,status:'Recuperación',classType:student.tariff==='group'?'group':'individual',note:note||'Recuperación de lluvia',plannedRecovery:true,recoveryRainId:row.recordId||('legacy-'+student.id)});return true;}
@@ -1619,7 +1620,27 @@ async function cleanupGoogleOrphans(){
 async function syncFixedSuspensionsToGoogle(){
  if(!googleCalendarId)return;
  let map={};try{map=JSON.parse(await getConfig('google_fixed_event_ids')||'{}')}catch{}
- const rawChanges=[...(data.fixedOverrides||[])],seriesCache=new Map();
+ const seriesCache=new Map(),storedOverrides=data.fixedOverrides||[],existingRecoveryOverrides=storedOverrides.filter(x=>x.source==='scheduled-recovery'),desiredRecoveryOverrides=new Map();
+ for(const recovery of data.classes||[]){
+  if(!recovery?.plannedRecovery||!recovery.date||!recovery.time)continue;
+  const student=data.students.find(x=>String(x.name)===String(recovery.student));if(!student)continue;
+  const date=String(recovery.date),month=date.slice(0,7),dow=(new Date(date+'T12:00:00').getDay()+6)%7;
+  const groupLabel=String(recovery.note||'').match(/^\[Grupo:([^\]]+)\]/)?.[1]||'';
+  let recoveryMembers=groupLabel?groupLabel.split(' + ').map(name=>data.students.find(x=>String(x.name).trim()===name.trim())).filter(Boolean):(recovery.classType==='group'?studentGroupMembers(student,month):[student]);
+  if(!recoveryMembers.length)recoveryMembers=[student];
+  const recoveryMemberIds=recoveryMembers.map(x=>String(x.id));
+  for(const member of recoveryMembers){
+   const scheduleIndex=studentSchedules(member).findIndex(sch=>{const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];return days.includes(dow)&&String(sch.time||'').slice(0,5)===String(recovery.time).slice(0,5)});
+   if(scheduleIndex<0||(member.startDate&&date<String(member.startDate)))continue;
+   const fixedOccurrenceId='fixed-'+member.id+'-'+scheduleIndex+'-'+date;
+   const alreadySuspended=(data.rain||[]).some(x=>String(x.fixedOccurrenceId||'')===fixedOccurrenceId)||(data.cancellations||[]).some(x=>String(x.fixedOccurrenceId||'')===fixedOccurrenceId)||storedOverrides.some(x=>String(x.fixedOccurrenceId||'')===fixedOccurrenceId&&['rain','cancel'].includes(String(x.status||'')));
+   if(alreadySuspended)continue;
+   desiredRecoveryOverrides.set(fixedOccurrenceId,{id:fixedOccurrenceId,fixedOccurrenceId,fixedStudentId:String(member.id),student:member.name,date,time:String(recovery.time).slice(0,5),duration:Number(studentSchedules(member)[scheduleIndex].duration||recovery.duration||1),hours:Number(recovery.duration||1),status:'recovery',source:'scheduled-recovery',sourceRecoveryId:String(recovery.id),recoveryMemberIds});
+  }
+ }
+ const desiredIds=new Set(desiredRecoveryOverrides.keys()),obsoleteRecoveryOverrides=existingRecoveryOverrides.filter(x=>!desiredIds.has(String(x.fixedOccurrenceId)));
+ data.fixedOverrides=[...storedOverrides.filter(x=>x.source!=='scheduled-recovery'),...desiredRecoveryOverrides.values()];
+ const rawChanges=[...data.fixedOverrides,...obsoleteRecoveryOverrides.map(x=>({...x,status:'normal',restoreScheduledRecovery:true}))];
  for(const item of [...(data.rain||[]),...(data.cancellations||[])]){
   if(!item.fixedOccurrenceId||rawChanges.some(x=>String(x.fixedOccurrenceId)===String(item.fixedOccurrenceId)))continue;
   const migrated={...item,status:(data.rain||[]).some(x=>x.id===item.id)?'rain':'cancel'};
@@ -1632,7 +1653,8 @@ async function syncFixedSuspensionsToGoogle(){
   const dt=new Date(item.date+'T12:00:00'),day=(dt.getDay()+6)%7;
   const seriesId=map[item.fixedStudentId+'|'+day]||map[item.fixedStudentId]||'';
   const time=String(item.time||item.fixedTime||'').slice(0,5),duration=Number(item.duration||item.hours||1);
-  const sameSlotMembers=student?.tariff==='group'?data.students.filter(st=>st.tariff==='group'&&!isStudentPausedForMonth(st,String(item.date).slice(0,7))&&studentSchedules(st).some(sch=>{
+  const recoveryMemberIds=Array.isArray(item.recoveryMemberIds)?item.recoveryMemberIds.map(String):null;
+  const sameSlotMembers=item.source==='scheduled-recovery'&&recoveryMemberIds?recoveryMemberIds.map(id=>data.students.find(st=>String(st.id)===id)).filter(Boolean):student?.tariff==='group'?data.students.filter(st=>st.tariff==='group'&&!isStudentPausedForMonth(st,String(item.date).slice(0,7))&&studentSchedules(st).some(sch=>{
    const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
    return days.includes(day)&&String(sch.time||'').slice(0,5)===time&&Number(sch.duration||1)===duration;
   })):[student].filter(Boolean);
@@ -1654,14 +1676,15 @@ async function syncFixedSuspensionsToGoogle(){
   }
   const storedNames=String(seriesEvent?.extendedProperties?.private?.student||'').split(' + ').map(x=>x.trim()).filter(Boolean);
   const pausedGroupMember=data.students.some(st=>st.tariff==='group'&&isStudentPausedForMonth(st,String(group.date).slice(0,7))&&studentSchedules(st).some(sch=>{const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];return days.includes(group.day)&&String(sch.time||'').slice(0,5)===group.time&&Number(sch.duration||1)===group.duration}));
-  const names=pausedGroupMember?group.members.map(x=>x.name):(storedNames.length>1?storedNames:(group.members.length>1?group.members.map(x=>x.name):[primary.student||data.students.find(x=>String(x.id)===String(primary.fixedStudentId))?.name||'']));
+  const recoveryOverride=primary.source==='scheduled-recovery'||primary.restoreScheduledRecovery;
+  const names=recoveryOverride?group.members.map(x=>x.name):(pausedGroupMember?group.members.map(x=>x.name):(storedNames.length>1?storedNames:(group.members.length>1?group.members.map(x=>x.name):[primary.student||data.students.find(x=>String(x.id)===String(primary.fixedStudentId))?.name||''])));
   const baseSummary=names.join(' + ')||seriesEvent?.summary||primary.student||'Clase';
   const statuses=items.map(x=>x.status||'normal');
-  const status=statuses.includes('rain')?'rain':statuses.includes('cancel')?'cancel':'normal';
+  const status=statuses.includes('rain')?'rain':statuses.includes('cancel')?'cancel':statuses.includes('recovery')?'recovery':'normal';
   for(const item of items)item.status=status;
-  const summary=googleStatusTitle(baseSummary,names[0],status);
+  const summary=status==='recovery'?'🔁 '+baseSummary:googleStatusTitle(baseSummary,names[0],status);
   const originalRange=googleDateTime(group.date,group.time,group.duration),compactRange=googleDateTime(group.date,group.time,0.25);
-  const description=status==='rain'?'Suspendida por lluvia · se recupera · Horario original: '+group.time+'–'+originalRange.end.slice(11,16)+' ('+group.duration+' h)':status==='cancel'?'Cancelada por el alumno · no se recupera · Horario original: '+group.time+'–'+originalRange.end.slice(11,16)+' ('+group.duration+' h)':'Horario fijo de Mis Clases';
+  const description=status==='rain'?'Suspendida por lluvia · se recupera · Horario original: '+group.time+'–'+originalRange.end.slice(11,16)+' ('+group.duration+' h)':status==='cancel'?'Cancelada por el alumno · no se recupera · Horario original: '+group.time+'–'+originalRange.end.slice(11,16)+' ('+group.duration+' h)':status==='recovery'?'Horario fijo ocupado por una recuperación programada':'Horario fijo de Mis Clases';
   const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
   const privateProps={mis_clases:'1',kind:'fixed_instance',student:names.join(' + '),fixed_occurrence_id:primary.fixedOccurrenceId,fixed_status:status,status_student:names.join(' + ')};
   const ids=[...new Set(items.map(x=>x.googleEventId).filter(Boolean))];
@@ -1707,7 +1730,7 @@ async function syncFixedSuspensionsToGoogle(){
   for(const item of items){item.googleEventId=savedId;item.status=status}
   changed=true;
  }
- if(changed||data.fixedOverrides?.length)await setConfig('estados_clases_fijas',JSON.stringify(data.fixedOverrides||[]));
+ if(changed||data.fixedOverrides?.length||obsoleteRecoveryOverrides.length)await setConfig('estados_clases_fijas',JSON.stringify(data.fixedOverrides||[]));
 }
 async function syncFixedSchedulesToGoogle(){
   const key='google_fixed_event_ids';
@@ -1931,12 +1954,13 @@ function buildCalendarChangeSet(before,after){
   const names=x=>(x.students||[]).map(st=>String(st.name||'').trim()).filter(Boolean).sort();
   const studentCalendar=x=>(x.students||[]).map(st=>({id:String(st.id),name:st.name||'',tariff:st.tariff||'',startDate:st.startDate||'',fixedSchedule:st.fixedSchedule||null})).sort((a,b)=>a.id.localeCompare(b.id));
   const fixedRecords=x=>[...(x.rain||[]),...(x.cancellations||[])].filter(r=>r.fixedOccurrenceId).map(r=>({id:r.id,fixedOccurrenceId:r.fixedOccurrenceId,fixedStudentId:r.fixedStudentId,date:r.date,time:r.time||r.fixedTime,hours:r.hours,status:r.status,recoveryId:r.recoveryId,note:r.note})).sort((a,b)=>String(a.fixedOccurrenceId).localeCompare(String(b.fixedOccurrenceId)));
+  const recoverySchedule=x=>(x.classes||[]).filter(c=>c.plannedRecovery).map(c=>({id:String(c.id),student:c.student,date:c.date,time:c.time,duration:c.duration,classType:c.classType,note:c.note})).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
   return {
     full:false,
     classIds:changedClasses,
     cleanup:JSON.stringify(names(before))!==JSON.stringify(names(after)),
     fixedSchedules:JSON.stringify(studentCalendar(before))!==JSON.stringify(studentCalendar(after))||JSON.stringify(before.monthlyPauses||[])!==JSON.stringify(after.monthlyPauses||[]),
-    fixedSuspensions:JSON.stringify(fixedRecords(before))!==JSON.stringify(fixedRecords(after))||JSON.stringify(before.fixedOverrides||[])!==JSON.stringify(after.fixedOverrides||[]),
+    fixedSuspensions:JSON.stringify(fixedRecords(before))!==JSON.stringify(fixedRecords(after))||JSON.stringify(before.fixedOverrides||[])!==JSON.stringify(after.fixedOverrides||[])||JSON.stringify(recoverySchedule(before))!==JSON.stringify(recoverySchedule(after)),
     activities:JSON.stringify(before.activities||[])!==JSON.stringify(after.activities||[])
   };
 }
