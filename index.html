@@ -461,7 +461,7 @@ function recoveryNote(note,rainId,allocations){
  return value;
 }
 function pendingHours(x){const completed=(data.classes||[]).filter(c=>c.student===x.name&&isRecoveryCompleted(c)).reduce((sum,c)=>sum+Number(c.duration||0),0);return Math.max(0,Number(x.rainHours||0)-Number(x.recoveredHours||0)-completed);}
-function fixedOccurrences(y,m){let out=[];let last=new Date(y,m+1,0).getDate();data.students.forEach(st=>{let f=st.fixedSchedule||{};let schedules=Array.isArray(f)?f:(f.active&&f.time?[f]:[]);schedules.forEach((sch,si)=>{if(!sch||!sch.active||!sch.time)return;let days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];for(let d=1;d<=last;d++){let dt=new Date(y,m,d),dow=(dt.getDay()+6)%7;if(days.includes(dow)){let date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(st.startDate&&date<st.startDate)continue;let fixedId='fixed-'+st.id+'-'+si+'-'+date,suspended=(data.rain||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),cancelled=(data.cancellations||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),exists=data.classes.some(c=>c.date===date&&c.time===sch.time&&c.student===st.name);if(!exists&&!suspended&&!cancelled)out.push({id:fixedId,student:st.name,date,time:sch.time,duration:Number(sch.duration||1),status:'Fija',note:'Horario fijo'});}}});});return out;}
+function fixedOccurrences(y,m){let out=[];let last=new Date(y,m+1,0).getDate();data.students.forEach(st=>{if(isStudentPausedForMonth(st,`${y}-${String(m+1).padStart(2,'0')}`))return;let f=st.fixedSchedule||{};let schedules=Array.isArray(f)?f:(f.active&&f.time?[f]:[]);schedules.forEach((sch,si)=>{if(!sch||!sch.active||!sch.time)return;let days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];for(let d=1;d<=last;d++){let dt=new Date(y,m,d),dow=(dt.getDay()+6)%7;if(days.includes(dow)){let date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(st.startDate&&date<st.startDate)continue;let fixedId='fixed-'+st.id+'-'+si+'-'+date,suspended=(data.rain||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),cancelled=(data.cancellations||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),exists=data.classes.some(c=>c.date===date&&c.time===sch.time&&c.student===st.name);if(!exists&&!suspended&&!cancelled)out.push({id:fixedId,student:st.name,date,time:sch.time,duration:Number(sch.duration||1),status:'Fija',note:'Horario fijo'});}}});});return out;}
 function fixedOccurrencesRange(studentName,days=60,pastDays=31){let out=[];let start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-pastDays);for(let i=0;i<days+pastDays;i++){let dt=new Date(start);dt.setDate(start.getDate()+i);let y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate();for(const c of fixedOccurrences(y,m)){if(c.student===studentName&&c.date===`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`)out.push(c)}}return out;}let viewDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);function isUuid(v){return typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)}
 function newUuid(){return crypto.randomUUID()}
 async function syncToSupabase(){
@@ -547,6 +547,7 @@ async function syncToSupabase(){
     await setConfig('cancelaciones_alumno',JSON.stringify(data.cancellations||[]));
     await setConfig('estados_clases_fijas',JSON.stringify(data.fixedOverrides||[]));
     await setConfig('estado_pagos_mensuales',JSON.stringify(data.monthlyBilling||{month:monthKey(),arrears:[]}));
+    await setConfig('pausas_mensuales_alumnos',JSON.stringify(data.monthlyPauses||[]));
     localStorage.setItem(KEY,JSON.stringify(data));
     return {ok:true};
   }catch(err){console.error('Supabase sync error:',err);return {ok:false,error:err};}
@@ -681,11 +682,13 @@ function openRainDebtOverview(studentId){
    const state=left>0?left.toLocaleString('es-AR')+' h pendientes'+(done>0?' · '+done.toLocaleString('es-AR')+' h recuperadas':'')+' de '+original.toLocaleString('es-AR')+' h':original.toLocaleString('es-AR')+' h recuperada'+(original===1?'':'s');
    return '<div class="recovery-origin"><span><b>'+escapePlanText(date)+'</b>'+(row.time?' · '+escapePlanText(row.time):'')+'</span><span>'+state+'</span></div>';
   }).join('');
-  const scheduledHtml=scheduled.length?'<div class="recovery-scheduled-list"><h4>Recuperaciones programadas</h4>'+scheduled.map(c=>{
+    const recentCompleted=[...new Map((data.classes||[]).filter(c=>c.plannedRecovery&&isRecoveryCompleted(c)&&allocationsForRecovery(c).some(a=>sourceIds.has(String(a.rainId)))&&String(c.date||'')>=localDateKey(new Date(Date.now()-14*86400000))).map(c=>[String(c.id),c])).values()].sort((a,b)=>(String(b.date||'')+String(b.time||'')).localeCompare(String(a.date||'')+String(a.time||'')));
+  const recentHtml=recentCompleted.length?'<div class="recovery-scheduled-list"><h4>Recuperaciones recientes</h4><div class="muted">Si alguna no se hizo, podés devolver sus horas.</div>'+recentCompleted.map(c=>{const date=c.date?new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}):'Sin fecha';return '<div class="card row between recovery-scheduled"><div><b>'+escapePlanText(date)+' · '+escapePlanText(c.time||'')+'</b><div class="muted">'+Number(c.duration||1).toLocaleString('es-AR')+' h · marcada como realizada</div></div><button type="button" class="btn secondary small" onclick="deleteScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;)">No se hizo · devolver horas</button></div>';}).join('')+'</div>':'';
+const scheduledHtml=scheduled.length?'<div class="recovery-scheduled-list"><h4>Recuperaciones programadas</h4>'+scheduled.map(c=>{
    const date=c.date?new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}):'Sin fecha',duration=Number(c.duration??1);
    return '<div class="card row between recovery-scheduled"><div><b>'+escapePlanText(date)+' · '+escapePlanText(c.time||'')+'</b><div class="muted">'+duration.toLocaleString('es-AR')+' h'+(entry.group?' · grupal':'')+'</div></div><div class="actions recovery-actions" style="margin:0"><button type="button" class="btn secondary small" onclick="editScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;,&quot;__all__&quot;)">Cambiar fecha y duración</button><button type="button" class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;)">Borrar recuperación</button></div></div>';}).join('')+'</div>':'';
   const scheduleButton=pending>0?(available>0?'<details class="recovery-program"><summary class="btn small"><span class="recovery-summary-open">Preparar recuperación</span><span class="recovery-summary-close">Ocultar formulario</span></summary><form class="form recovery-program-form" data-action="save-recovery"><input type="hidden" name="studentId" value="'+escapePlanText(entry.primary.id)+'"><input type="hidden" name="rainId" value="__all__"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+available+'" value="'+available+'" required></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required></label><label>Detalle<input name="note" placeholder="Recuperación de clases suspendidas"></label><div class="actions"><button class="btn" type="submit">Confirmar recuperación</button></div></form></details>':'<span class="muted">Sin horas libres para programar</span>'): '';
-  return '<div class="debt-student recovery-ledger"><div class="row between recovery-ledger-heading"><h3>'+escapePlanText(entry.label)+(entry.group?' · grupal':'')+'</h3></div><div class="card recovery-ledger-total"><div><span class="muted">Total pendiente</span><b>'+pending.toLocaleString('es-AR')+' h</b><small class="muted">'+available.toLocaleString('es-AR')+' h libres para programar</small></div>'+scheduleButton+'</div><div class="recovery-origins"><b>Suspensiones originales</b>'+(origins||'<div class="muted">No hay fechas de origen registradas.</div>')+'</div>'+scheduledHtml+'</div>';
+  return '<div class="debt-student recovery-ledger"><div class="row between recovery-ledger-heading"><h3>'+escapePlanText(entry.label)+(entry.group?' · grupal':'')+'</h3></div><div class="card recovery-ledger-total"><div><span class="muted">Total pendiente</span><b>'+pending.toLocaleString('es-AR')+' h</b><small class="muted">'+available.toLocaleString('es-AR')+' h libres para programar</small></div>'+scheduleButton+'</div><div class="recovery-origins"><b>Suspensiones originales</b>'+(origins||'<div class="muted">No hay fechas de origen registradas.</div>')+'</div>'+scheduledHtml+recentHtml+'</div>';
  }).join('');
  sheet.innerHTML='<div class="recovery-overview-heading"><div><h2>Horas por recuperar</h2><div class="sub">El saldo se reúne por alumno o grupo; las suspensiones originales quedan detalladas abajo.</div></div></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
  sheet.querySelectorAll('form[data-action="save-recovery"]').forEach(form=>form.addEventListener('submit',saveRainRecovery));
@@ -757,7 +760,7 @@ async function deleteScheduledRecovery(classId,studentId){
  const recovery=data.classes.find(c=>String(c.id)===String(classId)&&c.plannedRecovery);
  if(!recovery)return;
  const student=data.students.find(x=>String(x.id)===String(studentId));
- if(!confirm('¿Borrar este bloque de recuperación? Se quitará de Calendar y sus horas volverán a quedar pendientes para programarlas de nuevo o unificarlas.'))return;
+ if(!confirm(isRecoveryCompleted(recovery)?'¿La recuperación no se hizo? Se quitará de Calendar y devolverá las horas a pendientes.':'¿Borrar este bloque de recuperación? Se quitará de Calendar y sus horas volverán a quedar pendientes para programarlas de nuevo o unificarlas.'))return;
  let eventId=recovery.googleEventId||null,remoteDeleted=false;
  try{
   if(!eventId&&isUuid(recovery.id)){
@@ -921,8 +924,20 @@ function studentWeekSort(student){const raw=student.fixedSchedule||[],schedules=
   return {...f,days};
  });
 }
+function isStudentPausedForMonth(student,month=monthKey()){
+ return (data.monthlyPauses||[]).some(p=>String(p.studentId)===String(student?.id)&&String(p.month)===String(month));
+}
+async function toggleStudentMonthPause(studentId){
+ const student=data.students.find(x=>String(x.id)===String(studentId));if(!student)return;
+ const month=monthKey(),paused=isStudentPausedForMonth(student,month);
+ data.monthlyPauses=(data.monthlyPauses||[]).filter(p=>!(String(p.studentId)===String(student.id)&&String(p.month)===month));
+ if(!paused)data.monthlyPauses.push({studentId:String(student.id),student:student.name,month});
+ const saved=await save();if(saved===false)return;
+ if(window.currentStudentGroupIds?.length)renderStudentGroupDetail();else renderStudentDetail();
+ showSaveNotice(paused?'Clases reactivadas para este mes.':'Pausa guardada: este alumno no tendrá clases fijas este mes.');
+}
 function studentGroupSignature(st){
- if(st?.tariff!=='group')return '';
+ if(isStudentPausedForMonth(st)||st?.tariff!=='group')return '';
  const slots=studentSchedules(st).filter(f=>f?.active&&f.time).flatMap(f=>(Array.isArray(f.days)?f.days:[f.day]).map(Number).filter(d=>Number.isInteger(d)&&d>=0&&d<=6).map(d=>`${d}|${String(f.time).slice(0,5)}|${Number(f.duration||1)}`));
  return [...new Set(slots)].sort().join(';');
 }
@@ -1030,6 +1045,7 @@ function renderStudentDetail(){
  body.innerHTML='<div class="card"><div class="row"><div class="avatar">'+initials(x.name)+'</div><div><b>'+(x.age||'-')+' años</b><div class="muted">'+(x.level||'Nivel no cargado')+'</div></div></div>'+
  '<div class="grid" style="margin-top:14px"><div class="stat"><span>Tarifa</span><b>'+money(x.price||0)+'</b></div><div class="stat"><span>Estado</span><b>'+(x.paid?'Pagado':'Pendiente')+'</b></div></div>'+
  '<div style="margin-top:14px"><b>Horarios</b>'+(fs.length?fs.map(f=>'<div class="muted" style="margin-top:7px">'+(f.days||[f.day]).map(d=>dayNames[Number(d)]).join(' + ')+' · '+f.time+' · '+f.duration+' h</div>').join(''):'<div class="muted" style="margin-top:7px">Sin horario fijo</div>')+'</div>'+
+ '<div class="card row between" style="margin-top:14px"><div><b>'+(isStudentPausedForMonth(x)?'Pausa de clases activa':'Clases de este mes')+'</b><div class="muted">'+new Date(Number(monthKey().slice(0,4)),Number(monthKey().slice(5,7))-1,1).toLocaleDateString('es-AR',{month:'long',year:'numeric'})+'</div></div><button class="btn secondary small" onclick="toggleStudentMonthPause(&quot;'+x.id+'&quot;)">'+(isStudentPausedForMonth(x)?'Reactivar este mes':'Este mes no entrena')+'</button></div>'+
  '<div class="recovery-summary"><div><b>Recuperaciones</b><div class="muted">'+(studentGroupMembers(x).length>1?'Pendiente grupal compartido: ':'Pendientes por lluvia: ')+pendingHours(x)+' h</div></div>'+(pendingHours(x)>0?studentGroupMembers(x).length>1?'<button class="btn small" onclick="openRainDebtOverview(&quot;'+x.id+'&quot;)">Ver recuperación grupal</button>':'<button class="btn small" onclick="openModal(\'recoverStudent\',\''+x.id+'\')">Registrar recuperación</button>':'')+'</div>'+
  '<div style="margin-top:14px"><b>Observaciones</b><div class="muted" style="margin-top:5px">'+(x.notes||'Sin observaciones')+'</div></div>'+
  '<div class="actions"><button class="btn secondary small" onclick="editStudent(\''+x.id+'\')">Editar</button><button class="btn small" onclick="togglePaid(\''+x.id+'\');renderStudentDetail()">'+(x.paid?'Marcar pendiente':'Marcar pagado')+'</button><button class="btn secondary small student-delete" onclick="deleteStudent(\''+x.id+'\')">Eliminar</button></div></div>'+
@@ -2273,7 +2289,7 @@ async function loadFromSupabase(){
       supabaseClient.from('pagos').select('*').order('fecha'),
       supabaseClient.from('planes').select('*').order('created_at'),
       supabaseClient.from('tarifas').select('*').eq('activa',true),
-      supabaseClient.from('configuracion').select('clave,valor').in('clave',['actividades_recurrentes','cancelaciones_alumno','suspensiones_lluvia','estados_clases_fijas','estado_pagos_mensuales'])
+      supabaseClient.from('configuracion').select('clave,valor').in('clave',['actividades_recurrentes','cancelaciones_alumno','suspensiones_lluvia','estados_clases_fijas','estado_pagos_mensuales','pausas_mensuales_alumnos'])
     ]);
     for(const r of [aRes,hRes,cRes,pRes,plRes,tRes,cfgRes]) if(r.error) throw r.error;
 
@@ -2319,6 +2335,8 @@ async function loadFromSupabase(){
       if(r.tipo==='mensual_grupal') data.rates.group=Number(r.precio||0);
     }
     data.payments=remotePayments.map(p=>({id:p.id,student:nameById[p.alumno_id]||'',amount:Number(p.monto||0),type:p.concepto||'individual',date:p.fecha}));
+    const pauseConfig=(cfgRes.data||[]).find(x=>x.clave==='pausas_mensuales_alumnos');
+    if(pauseConfig?.valor){try{data.monthlyPauses=JSON.parse(pauseConfig.valor)||[]}catch{data.monthlyPauses=[]}}else data.monthlyPauses=[];
     const monthlyConfig=(cfgRes.data||[]).find(x=>x.clave==='estado_pagos_mensuales');
     if(monthlyConfig?.valor){try{data.monthlyBilling=JSON.parse(monthlyConfig.valor)||null}catch{data.monthlyBilling=null}}
     else data.monthlyBilling=localSnapshot?.monthlyBilling||null;
