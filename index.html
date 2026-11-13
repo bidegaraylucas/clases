@@ -358,6 +358,8 @@ body.dark .home-student:hover,body.theme-pastel .home-student:hover,body.dark .h
  .recovery-scheduled .recovery-actions{width:100%;flex-direction:column}
  .recovery-scheduled .recovery-actions .btn{width:100%}
 }
+
+.home-class-row{display:grid;grid-template-columns:minmax(90px,1fr) minmax(170px,230px) auto;gap:9px;align-items:center}.home-class-state{width:100%;min-width:0;padding:8px 10px;font-size:12px}.home-class-row>.status-badge{justify-self:start}@media(max-width:560px){.home-class-row{grid-template-columns:minmax(0,1fr) auto;gap:7px}.home-class-row .home-class-state,.home-class-row>.status-badge{grid-column:1/-1;grid-row:2;width:100%}}
 </style></head><body><div id="authGate"><div id="authCard"><h2>Mis Clases</h2><div class="sub">Iniciá sesión para acceder a tus clases.</div><form id="authForm"><input id="authEmail" type="email" placeholder="Email" autocomplete="email" required><input id="authPassword" type="password" placeholder="Contraseña" autocomplete="current-password" required><div id="authError"></div><button class="btn" type="submit">Iniciar sesión</button><div id="authLoading">Comprobando sesión…</div></form></div></div><div class="app"><header><div><h1>Mis Clases</h1></div><button class="btn secondary" onclick="openModal('settings')"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"></path><path d="M19 13.5a7.7 7.7 0 0 0 0-3l2-1.2-2-3.4-2.2 1a7.7 7.7 0 0 0-2.6-1.5L14 3h-4l-.2 2.4a7.7 7.7 0 0 0-2.6 1.5L5 5.9 3 9.3l2 1.2a7.7 7.7 0 0 0 0 3l-2 1.2 2 3.4 2.2-1a7.7 7.7 0 0 0 2.6 1.5L10 21h4l.2-2.4a7.7 7.7 0 0 0 2.6-1.5l2.2 1 2-3.4-2-1.2Z"></path></svg></button></header><main>
 <section id="home" class="screen active"><div class="grid" id="stats"></div><div class="section" id="homeArrearsSection" hidden><div class="sectionhead"><div><h2>Pagos pendientes de meses anteriores</h2><div class="sub">Avisos de meses anteriores que todavía no se cobraron.</div></div></div><div id="homeArrearsList" class="list"></div></div><div class="section"><div class="sectionhead"><div><h2>Alumnos</h2><div class="sub">Cada ficha reúne horarios, pagos y recuperaciones.</div></div><div class="actions" style="margin:0"><button class="btn small secondary" onclick="openModal('activity')">+ Escuelita</button><button class="btn small" onclick="openModal('student')">+ Alumno</button></div></div><details class="home-list-disclosure" id="homeStudentDisclosure"><summary><b>Lista de alumnos</b><span class="disclosure-count" id="homeStudentCount">0 alumnos</span></summary><div class="home-list-content"><div class="toolbar"><input class="search" id="homeStudentSearch" placeholder="Buscar alumno..." oninput="renderHomeStudents()"></div><div id="homeStudentList" class="list"></div></div></details></div><div class="section"><details class="home-list-disclosure" id="homeDebtDisclosure"><summary><b>Horas por recuperar</b><span class="disclosure-count" id="homeDebtCount">0 h</span></summary><div class="home-list-content" id="homeDebt"></div></details></div><div class="section" id="homeActivities"></div></section>
 <section id="students" class="screen"><div class="sectionhead"><div><h2>Mi semana</h2><div class="sub">Agenda semanal de clases</div></div></div><div class="week-toolbar"><button class="btn secondary small" onclick="changeClassWeek(-1)" aria-label="Semana anterior">‹</button><b id="classWeekTitle"></b><span class="muted" id="classWeekRange"></span><button class="btn secondary small" onclick="changeClassWeek(1)" aria-label="Semana siguiente">›</button><button class="btn small" onclick="goToCurrentWeek()">Hoy</button></div><div id="classWeekDays" class="week-days"></div><div class="class-list-date selected-day-title" id="classWeekDayTitle"></div><div id="classWeekList" class="list"></div></section>
@@ -650,17 +652,32 @@ function allocateRecoveryHours(rows,hours,recoveryId=''){
  }
  return left<=0.0001?allocations:[];
 }
+function membersForDebtRow(row,fallbackMembers){
+ const records=(row.groupRows||[]).map(x=>x.record).filter(Boolean);if(!records.length&&row.source)records.push(row.source);
+ const ids=[...new Set(records.map(r=>data.students.find(st=>String(st.id)===String(r.studentId||r.fixedStudentId||'')||String(st.name)===String(r.student||''))?.id).filter(Boolean).map(String))];
+ const members=ids.map(id=>data.students.find(st=>String(st.id)===id)).filter(Boolean);
+ return members.length?members:fallbackMembers.slice();
+}
+function debtEntriesForMembers(members){
+ const sorted=members.slice().sort((a,b)=>a.name.localeCompare(b.name,'es'));
+ if(sorted.length<=1){const primary=sorted[0];if(!primary)return [];const rows=rainDebtRows(primary,true).filter(row=>Number(row.hours||0)>0),hours=rows.reduce((sum,row)=>sum+Number(row.hours||0),0);return hours>0?[{members:[primary],primary,hours,label:primary.name,group:false,rows}]:[]}
+ const allRows=groupRainDebtRows(sorted,true),buckets=new Map();
+ for(const row of allRows.filter(x=>Number(x.hours||0)>0)){
+  const rowMembers=membersForDebtRow(row,sorted).sort((a,b)=>a.name.localeCompare(b.name,'es')),group=rowMembers.length>1,key=group?'group:'+rowMembers.map(x=>String(x.id)).sort().join('|'):'solo:'+String(rowMembers[0].id);
+  if(!buckets.has(key))buckets.set(key,{members:rowMembers,primary:rowMembers[0],hours:0,label:group?studentGroupLabel(rowMembers):rowMembers[0].name,group,rows:[]});
+  const bucket=buckets.get(key);bucket.hours+=Number(row.hours||0);bucket.rows.push(row);
+ }
+ const entries=[...buckets.values()],tracked=entries.reduce((sum,e)=>sum+e.hours,0),total=groupPendingHours(sorted);
+ if(total>tracked+0.0001){const key='group:'+sorted.map(x=>String(x.id)).sort().join('|'),found=entries.find(e=>e.group&&e.members.length===sorted.length);if(found)found.hours+=total-tracked;else entries.push({members:sorted,primary:sorted[0],hours:total-tracked,label:studentGroupLabel(sorted),group:true,rows:[{id:'legacy-group-'+sorted.map(x=>String(x.id)).sort().join('-'),recordId:'legacy-group-'+sorted.map(x=>String(x.id)).sort().join('-'),hours:total-tracked,availableHours:total-tracked,originalHours:total-tracked,groupRows:[],source:null,unmatched:true}]})}
+ return entries;
+}
 function pendingDebtEntries(){
  const seen=new Set(),entries=[];
  for(const student of data.students){
   if(seen.has(String(student.id)))continue;
   const members=studentGroupMembers(student).slice().sort((a,b)=>a.name.localeCompare(b.name,'es'));
   members.forEach(x=>seen.add(String(x.id)));
-  const group=members.length>1;
-  const hours=group?groupPendingHours(members):pendingHours(student);
-  if(hours<=0)continue;
-  const primary=members.find(x=>pendingHours(x)>0)||members[0];
-  entries.push({members,primary,hours,label:group?studentGroupLabel(members):student.name,group});
+  entries.push(...debtEntriesForMembers(members));
  }
  return entries;
 }
@@ -670,10 +687,10 @@ function openRainDebtOverview(studentId){
  let entries;
  if(studentId){
   const student=data.students.find(x=>String(x.id)===String(studentId)),members=student?studentGroupMembers(student):[];
-  entries=members.length?[{members,primary:members.slice().sort((a,b)=>a.name.localeCompare(b.name,'es'))[0],label:members.length>1?studentGroupLabel(members):student.name,group:members.length>1}]:[];
+  entries=members.length?debtEntriesForMembers(members).filter(entry=>entry.members.some(x=>String(x.id)===String(studentId))):[];
  }else entries=pendingDebtEntries();
  const content=entries.map(entry=>{
-  const rows=entry.group?groupRainDebtRows(entry.members,true):rainDebtRows(entry.primary,true),pending=rows.reduce((sum,row)=>sum+Number(row.hours||0),0),available=rows.reduce((sum,row)=>sum+Number(row.availableHours||0),0);
+  const rows=entry.rows||(entry.group?groupRainDebtRows(entry.members,true):rainDebtRows(entry.primary,true)),pending=rows.reduce((sum,row)=>sum+Number(row.hours||0),0),available=rows.reduce((sum,row)=>sum+Number(row.availableHours||0),0),rainIds=rows.map(row=>String(row.recordId||row.id||'')).filter(Boolean).join('|');
   const sourceIds=new Set(rows.flatMap(row=>[row.recordId,row.id,...(row.groupRows||[]).map(x=>x.record?.id)].filter(Boolean).map(String)));
   const scheduled=[...new Map((data.classes||[]).filter(c=>c.plannedRecovery&&!isRecoveryCompleted(c)&&allocationsForRecovery(c).some(a=>sourceIds.has(String(a.rainId)))).map(c=>[String(c.id),c])).values()].sort((a,b)=>(String(a.date||'')+String(a.time||'')).localeCompare(String(b.date||'')+String(b.time||'')));
   const origins=rows.filter(row=>Number(row.hours||0)>0).map(row=>{
@@ -687,7 +704,7 @@ function openRainDebtOverview(studentId){
 const scheduledHtml=scheduled.length?'<div class="recovery-scheduled-list"><h4>Recuperaciones programadas</h4>'+scheduled.map(c=>{
    const date=c.date?new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}):'Sin fecha',duration=Number(c.duration??1);
    return '<div class="card row between recovery-scheduled"><div><b>'+escapePlanText(date)+' · '+escapePlanText(c.time||'')+'</b><div class="muted">'+duration.toLocaleString('es-AR')+' h'+(entry.group?' · grupal':'')+'</div></div><div class="actions recovery-actions" style="margin:0"><button type="button" class="btn secondary small" onclick="editScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;,&quot;__all__&quot;)">Cambiar fecha y duración</button><button type="button" class="btn danger small" onclick="deleteScheduledRecovery(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(entry.primary.id)+'&quot;)">Borrar recuperación</button></div></div>';}).join('')+'</div>':'';
-  const scheduleButton=pending>0?(available>0?'<details class="recovery-program"><summary class="btn small"><span class="recovery-summary-open">Preparar recuperación</span><span class="recovery-summary-close">Ocultar formulario</span></summary><form class="form recovery-program-form" data-action="save-recovery"><input type="hidden" name="studentId" value="'+escapePlanText(entry.primary.id)+'"><input type="hidden" name="rainId" value="__all__"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+available+'" value="'+available+'" required></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required></label><label>Detalle<input name="note" placeholder="Recuperación de clases suspendidas"></label><div class="actions"><button class="btn" type="submit">Confirmar recuperación</button></div></form></details>':'<span class="muted">Sin horas libres para programar</span>'): '';
+  const scheduleButton=pending>0?(available>0?'<details class="recovery-program"><summary class="btn small"><span class="recovery-summary-open">Preparar recuperación</span><span class="recovery-summary-close">Ocultar formulario</span></summary><form class="form recovery-program-form" data-action="save-recovery"><input type="hidden" name="studentId" value="'+escapePlanText(entry.primary.id)+'"><input type="hidden" name="rainId" value="'+escapePlanText(rainIds)+'"><label>Duración (horas)<input type="number" name="hours" min="0.5" step="0.5" max="'+available+'" value="'+available+'" required></label><label>Fecha programada<input type="date" name="date" value="'+weekDateKey(new Date())+'" required></label><label>Hora de recuperación<input type="time" name="time" required></label><label>Detalle<input name="note" placeholder="Recuperación de clases suspendidas"></label><div class="actions"><button class="btn" type="submit">Confirmar recuperación</button></div></form></details>':'<span class="muted">Sin horas libres para programar</span>'): '';
   return '<div class="debt-student recovery-ledger"><div class="row between recovery-ledger-heading"><h3>'+escapePlanText(entry.label)+(entry.group?' · grupal':'')+'</h3></div><div class="card recovery-ledger-total"><div><span class="muted">Total pendiente</span><b>'+pending.toLocaleString('es-AR')+' h</b><small class="muted">'+available.toLocaleString('es-AR')+' h libres para programar</small></div>'+scheduleButton+'</div><div class="recovery-origins"><b>Suspensiones originales</b>'+(origins||'<div class="muted">No hay fechas de origen registradas.</div>')+'</div>'+scheduledHtml+recentHtml+'</div>';
  }).join('');
  sheet.innerHTML='<div class="recovery-overview-heading"><div><h2>Horas por recuperar</h2><div class="sub">El saldo se reúne por alumno o grupo; las suspensiones originales quedan detalladas abajo.</div></div></div>'+(content||'<div class="card empty">No hay horas pendientes por recuperar.</div>');
@@ -715,15 +732,20 @@ function openRainRecovery(studentId,rainId){
 }
 async function saveRainRecovery(e){
  e.preventDefault();const v=vals(e.target),student=data.students.find(x=>String(x.id)===String(v.studentId));if(!student)return;
- const members=studentGroupMembers(student),group=members.length>1,rows=recoveryDebtRowsFor(student),targetRows=String(v.rainId)==='__all__'?rows:rows.filter(row=>String(row.id)===String(v.rainId)||String(row.recordId)===String(v.rainId));
+ const rows=recoveryDebtRowsFor(student),requestedRainIds=String(v.rainId||'').split('|').filter(Boolean),targetRows=String(v.rainId)==='__all__'?rows:rows.filter(row=>requestedRainIds.includes(String(row.id))||requestedRainIds.includes(String(row.recordId)));
  const rawHours=String(v.hours??'').trim().replace(',','.'),hours=Number(rawHours),available=targetRows.reduce((sum,row)=>sum+Number(row.availableHours||0),0),allocations=Number.isFinite(hours)?allocateRecoveryHours(targetRows,hours):[];
  if(!Number.isFinite(hours)||hours<0.5||Math.abs(hours*2-Math.round(hours*2))>1e-8){showSaveNotice('Ingresá una duración válida en bloques de media hora, por ejemplo 0,5 o 1,5.');return}
  if(hours>available+0.0001){showSaveNotice('Quedan '+available.toLocaleString('es-AR')+' h libres para programar; reducí la duración.');return}
  if(!allocations.length){showSaveNotice('No pude vincular las horas con las suspensiones pendientes. Cerrá y volvé a abrir este detalle para actualizarlo.');return}
- const sourceDates=allocations.map(a=>targetRows.find(row=>String(row.recordId||row.id)===String(a.rainId))).filter(Boolean).map(row=>row.date).filter(Boolean);
+ const allocatedRows=allocations.map(a=>targetRows.find(row=>String(row.recordId||row.id)===String(a.rainId))).filter(Boolean);
+ const memberIdsByRow=allocatedRows.map(row=>{const records=(row.groupRows||[]).map(x=>x.record).filter(Boolean);if(!records.length&&row.source)records.push(row.source);return [...new Set(records.map(r=>data.students.find(st=>String(st.id)===String(r.studentId||r.fixedStudentId||'')||String(st.name)===String(r.student||''))?.id).filter(Boolean).map(String))].sort()});
+ const sameSharedGroup=memberIdsByRow.length>0&&memberIdsByRow[0].length>1&&memberIdsByRow.every(ids=>JSON.stringify(ids)===JSON.stringify(memberIdsByRow[0]));
+ const recoveryMembers=sameSharedGroup?memberIdsByRow[0].map(id=>data.students.find(st=>String(st.id)===String(id))).filter(Boolean):[data.students.find(st=>String(st.id)===String(memberIdsByRow[0]?.[0]))||student];
+ const group=sameSharedGroup&&recoveryMembers.length>1,recoveryStudent=group?recoveryMembers[0]:recoveryMembers[0]||student;
+ const sourceDates=allocatedRows.map(row=>row.date).filter(Boolean);
  const detail='Recuperación de horas pendientes'+(sourceDates.length?' · origen '+[...new Set(sourceDates)].map(d=>d.split('-').reverse().join('/')).join(', '):'');
- const note=(group?'[Grupo:'+studentGroupLabel(members)+'] ':'')+(v.note||detail);
- data.classes.push({id:newUuid(),student:student.name,date:v.date,time:v.time,duration:hours,status:'Recuperación',classType:group?'group':(student.tariff==='group'?'group':'individual'),note,plannedRecovery:true,recoveryRainId:allocations[0].rainId,recoveryRainAllocations:allocations});
+ const note=(group?'[Grupo:'+studentGroupLabel(recoveryMembers)+'] ':'')+(v.note||detail);
+ data.classes.push({id:newUuid(),student:recoveryStudent.name,date:v.date,time:v.time,duration:hours,status:'Recuperación',classType:group?'group':'individual',note,plannedRecovery:true,recoveryRainId:allocations[0].rainId,recoveryRainAllocations:allocations});
  closeModal();showSaveNotice('Guardando la recuperación…');
  try{
   const saved=await save();
@@ -833,6 +855,7 @@ function renderHome(){
 function renderHomeStudents(){
  const disclosure=document.getElementById('homeStudentDisclosure'),wasOpen=!!disclosure?.open,count=document.getElementById('homeStudentCount');if(count)count.textContent=data.students.length+' '+(data.students.length===1?'alumno':'alumnos');
  const host=document.getElementById('homeStudentList');if(!host)return;
+ const openStudents=new Set([...host.querySelectorAll('details.home-student[open]')].map(el=>String(el.dataset.studentId||'')));
  const query=(document.getElementById('homeStudentSearch')?.value||'').trim().toLocaleLowerCase('es');
  const students=data.students.filter(st=>String(st.name||'').toLocaleLowerCase('es').includes(query)).slice().sort((a,b)=>{const aa=studentWeekSort(a),bb=studentWeekSort(b);return aa.day-bb.day||aa.time.localeCompare(bb.time)||a.name.localeCompare(b.name,'es')});
  const occurrences=classListOccurrences(3,45);
@@ -840,9 +863,9 @@ function renderHomeStudents(){
   const name=escapePlanText(st.name),schedule=escapePlanText(studentScheduleText(st)),classes=occurrences.filter(c=>String(c.studentId)===String(st.id)||String(c.student)===String(st.name)).slice(0,5),debts=rainDebtRows(st),groupMembers=studentGroupMembers(st);
 
   const recoveryRows=debts.length?debts.map(r=>'<div class="home-detail-row"><span>'+(r.date?escapePlanText(new Date(r.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'})):'Suspensión sin fecha')+(r.time?' · '+escapePlanText(r.time):'')+' · '+(r.scheduled?.length?'Recuperación programada':'Pendiente')+'</span><b>'+r.hours+' h</b></div>').join(''):'<div class="muted">Sin horas pendientes.</div>';
-  const classRows=classes.length?classes.map(c=>{const d=new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}),status=c.status==='Lluvia'?'☂️ Suspendida por lluvia':c.status==='Cancelada'?'❌ Cancelada por alumno':isRecoveryClass(c)?'🔄 Recuperación':'Normal';return '<div class="home-detail-row"><span>'+escapePlanText(d)+' · '+escapePlanText(c.time||'')+' · '+status+'</span><span>'+Number(c.duration||1)+' h</span></div>'}).join(''):'<div class="muted">No hay clases en este período.</div>';
+  const classRows=classes.length?classes.map(c=>{const d=new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}),state=c.status==='Lluvia'?'rain':c.status==='Cancelada'?'cancel':'normal',control=isRecoveryClass(c)?classStatusBadge(c):'<select class="home-class-state" aria-label="Estado de clase '+escapePlanText(d)+'" onchange="setStudentClassStatus(\''+escapePlanText(c.id)+'\',this.value,\''+escapePlanText(st.id)+'\')"><option value="normal" '+(state==='normal'?'selected':'')+'>Normal · se dio</option><option value="rain" '+(state==='rain'?'selected':'')+'>☂️ Lluvia · recuperar</option><option value="cancel" '+(state==='cancel'?'selected':'')+'>❌ Cancelada · no recuperar</option></select>';return '<div class="home-detail-row home-class-row"><span>'+escapePlanText(d)+' · '+escapePlanText(c.time||'')+'</span>'+control+'<span>'+Number(c.duration||1)+' h</span></div>'}).join(''):'<div class="muted">No hay clases en este período.</div>';
   const dataText=[st.age?escapePlanText(st.age)+' años':'',escapePlanText(st.level||'Nivel no cargado'),escapePlanText(st.tariff==='group'?'Tarifa grupal':st.tariff==='class'?'Por clase':'Individual')].filter(Boolean).join(' · '),pauseMonth=new Date(Number(monthKey().slice(0,4)),Number(monthKey().slice(5,7))-1,1).toLocaleDateString('es-AR',{month:'long',year:'numeric'});
-  return '<details class="card home-student"><summary class="home-student-summary"><span class="row"><span class="avatar">'+initials(st.name)+'</span><span class="home-student-title"><b>'+name+'</b><span class="muted">'+schedule+'</span></span></span><span class="row"><span class="badge '+(st.paid?'':'red')+'">'+(st.paid?'Pagado':'Pendiente')+'</span><span class="chevron">⌄</span></span></summary><div class="home-student-body"><div class="home-detail-section"><div class="row between"><b>Datos</b><div class="actions home-student-actions" style="margin:0"><button class="btn secondary small" onclick="editStudent(&quot;'+escapePlanText(st.id)+'&quot;)">Editar alumno</button><button class="btn secondary small student-delete" onclick="deleteStudent(&quot;'+escapePlanText(st.id)+'&quot;)">Eliminar</button></div></div><div class="muted">'+(dataText||'Sin datos adicionales')+'</div>'+(st.notes?'<div class="muted">'+escapePlanText(st.notes)+'</div>':'')+'</div><div class="home-detail-section"><div class="row between"><b>'+(isStudentPausedForMonth(st)?'Pausa activa · ':'Clases de ')+pauseMonth+'</b><button class="btn secondary small" onclick="toggleStudentMonthPause(&quot;'+escapePlanText(st.id)+'&quot;)">'+(isStudentPausedForMonth(st)?'Reactivar este mes':'Este mes no entrena')+'</button></div><div class="muted">'+(isStudentPausedForMonth(st)?'Sus clases fijas quedan pausadas este mes.':'Podés pausar sus clases fijas sin borrar el perfil ni el historial.')+'</div></div><div class="home-detail-section"><div class="row between"><b>Pagos</b><button class="btn small '+(st.paid?'secondary':'')+'" onclick="togglePaid(\''+escapePlanText(st.id)+'\');renderHome()">'+(st.paid?'Marcar pendiente':'Me pagaron')+'</button></div><div class="home-detail-row"><span>Estado del período</span><b>'+money(st.price||0)+' · '+(st.paid?'Pagado':'Pendiente')+'</b></div></div><div class="home-detail-section"><div class="row between"><b>Clases próximas</b><button class="btn secondary small" onclick="openModal(\'class\',\''+escapePlanText(st.id)+'\')">+ Clase</button></div>'+classRows+'</div><div class="home-detail-section"><div class="row between"><b>Recuperaciones · '+(groupMembers.length>1?'grupal compartida':'individual')+'</b>'+(pendingHours(st)>0?'<button class="btn small" onclick="openRainDebtOverview(&quot;'+escapePlanText(st.id)+'&quot;)">Ver / programar</button>':'')+'</div>'+recoveryRows+'</div></div></details>';
+  return '<details class="card home-student" data-student-id="'+escapePlanText(st.id)+'" '+(openStudents.has(String(st.id))?'open':'')+'><summary class="home-student-summary"><span class="row"><span class="avatar">'+initials(st.name)+'</span><span class="home-student-title"><b>'+name+'</b><span class="muted">'+schedule+'</span></span></span><span class="row"><span class="badge '+(st.paid?'':'red')+'">'+(st.paid?'Pagado':'Pendiente')+'</span><span class="chevron">⌄</span></span></summary><div class="home-student-body"><div class="home-detail-section"><div class="row between"><b>Datos</b><div class="actions home-student-actions" style="margin:0"><button class="btn secondary small" onclick="editStudent(&quot;'+escapePlanText(st.id)+'&quot;)">Editar alumno</button><button class="btn secondary small student-delete" onclick="deleteStudent(&quot;'+escapePlanText(st.id)+'&quot;)">Eliminar</button></div></div><div class="muted">'+(dataText||'Sin datos adicionales')+'</div>'+(st.notes?'<div class="muted">'+escapePlanText(st.notes)+'</div>':'')+'</div><div class="home-detail-section"><div class="row between"><b>'+(isStudentPausedForMonth(st)?'Pausa activa · ':'Clases de ')+pauseMonth+'</b><button class="btn secondary small" onclick="toggleStudentMonthPause(&quot;'+escapePlanText(st.id)+'&quot;)">'+(isStudentPausedForMonth(st)?'Reactivar este mes':'Este mes no entrena')+'</button></div><div class="muted">'+(isStudentPausedForMonth(st)?'Sus clases fijas quedan pausadas este mes.':'Podés pausar sus clases fijas sin borrar el perfil ni el historial.')+'</div></div><div class="home-detail-section"><div class="row between"><b>Pagos</b><button class="btn small '+(st.paid?'secondary':'')+'" onclick="togglePaid(\''+escapePlanText(st.id)+'\');renderHome()">'+(st.paid?'Marcar pendiente':'Me pagaron')+'</button></div><div class="home-detail-row"><span>Estado del período</span><b>'+money(st.price||0)+' · '+(st.paid?'Pagado':'Pendiente')+'</b></div></div><div class="home-detail-section"><div class="row between"><b>Clases próximas</b><button class="btn secondary small" onclick="openModal(\'class\',\''+escapePlanText(st.id)+'\')">+ Clase</button></div>'+classRows+'</div><div class="home-detail-section"><div class="row between"><b>Recuperaciones · '+(groupMembers.length>1?'grupal compartida':'individual')+'</b>'+(pendingHours(st)>0?'<button class="btn small" onclick="openRainDebtOverview(&quot;'+escapePlanText(st.id)+'&quot;)">Ver / programar</button>':'')+'</div>'+recoveryRows+'</div></div></details>';
  }).join(''):'<div class="card empty">'+(query?'No encontré alumnos.':'Todavía no hay alumnos. Usá “+ Alumno” para cargar el primero.')+'</div>';
  if(disclosure)disclosure.open=wasOpen;
 }
@@ -937,13 +960,13 @@ async function toggleStudentMonthPause(studentId){
  if(window.currentStudentGroupIds?.length)renderStudentGroupDetail();else renderStudentDetail();
  showSaveNotice(paused?'Clases reactivadas para este mes.':'Pausa guardada: este alumno no tendrá clases fijas este mes.');
 }
-function studentGroupSignature(st){
- if(isStudentPausedForMonth(st)||st?.tariff!=='group')return '';
+function studentGroupSignature(st,month=null){
+ if((month&&isStudentPausedForMonth(st,month))||st?.tariff!=='group')return '';
  const slots=studentSchedules(st).filter(f=>f?.active&&f.time).flatMap(f=>(Array.isArray(f.days)?f.days:[f.day]).map(Number).filter(d=>Number.isInteger(d)&&d>=0&&d<=6).map(d=>`${d}|${String(f.time).slice(0,5)}|${Number(f.duration||1)}`));
  return [...new Set(slots)].sort().join(';');
 }
-function studentGroupMembers(student){
- const signature=studentGroupSignature(student);
+function studentGroupMembers(student,month=null){
+ const signature=studentGroupSignature(student,month);
  if(!signature)return [student];
  const members=data.students.filter(x=>studentGroupSignature(x)===signature);
  return members.length>1?members:[student];
@@ -969,7 +992,7 @@ function renderStudents(){
  const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();
  const groups=new Map();
  for(const st of data.students){
-  const key=studentGroupSignature(st);
+  const key=studentGroupSignature(st,monthKey());
   if(key){if(!groups.has(key))groups.set(key,[]);groups.get(key).push(st)}
  }
  const grouped=Array.from(groups.values()).filter(m=>m.length>1);
@@ -1535,7 +1558,7 @@ async function syncClassToGoogle(c){
   const studentObj=data.students.find(x=>String(x.name).trim()===String(c.student).trim());
   const groupLabel=String(c.note||'').match(/^\[Grupo:([^\]]+)\]/)?.[1]||'';
   const displayStudent=groupLabel||c.student;
-  const isGroup=(c.classType==='group'||c.grouped===true||c.grouped==='1'||c.status==='Clase grupal'||(isRecoveryClass(c)&&studentObj?.tariff==='group')||!!groupLabel);
+  const isGroup=(c.classType==='group'||c.grouped===true||c.grouped==='1'||c.status==='Clase grupal'||!!groupLabel);
   const ordinaryTitle=(isRecoveryClass(c)?'🔁 ':'')+displayStudent;
   const title=status?googleStatusTitle(displayStudent,displayStudent,status):ordinaryTitle;
   const eventNote=String(c.note||'').replace(/^\[Grupo:[^\]]+\]\s*/,'');
@@ -1609,7 +1632,7 @@ async function syncFixedSuspensionsToGoogle(){
   const dt=new Date(item.date+'T12:00:00'),day=(dt.getDay()+6)%7;
   const seriesId=map[item.fixedStudentId+'|'+day]||map[item.fixedStudentId]||'';
   const time=String(item.time||item.fixedTime||'').slice(0,5),duration=Number(item.duration||item.hours||1);
-  const sameSlotMembers=student?.tariff==='group'?data.students.filter(st=>st.tariff==='group'&&studentSchedules(st).some(sch=>{
+  const sameSlotMembers=student?.tariff==='group'?data.students.filter(st=>st.tariff==='group'&&!isStudentPausedForMonth(st,String(item.date).slice(0,7))&&studentSchedules(st).some(sch=>{
    const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
    return days.includes(day)&&String(sch.time||'').slice(0,5)===time&&Number(sch.duration||1)===duration;
   })):[student].filter(Boolean);
@@ -1630,7 +1653,8 @@ async function syncFixedSuspensionsToGoogle(){
    }
   }
   const storedNames=String(seriesEvent?.extendedProperties?.private?.student||'').split(' + ').map(x=>x.trim()).filter(Boolean);
-  const names=storedNames.length>1?storedNames:(group.members.length>1?group.members.map(x=>x.name):[primary.student||data.students.find(x=>String(x.id)===String(primary.fixedStudentId))?.name||'']);
+  const pausedGroupMember=data.students.some(st=>st.tariff==='group'&&isStudentPausedForMonth(st,String(group.date).slice(0,7))&&studentSchedules(st).some(sch=>{const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];return days.includes(group.day)&&String(sch.time||'').slice(0,5)===group.time&&Number(sch.duration||1)===group.duration}));
+  const names=pausedGroupMember?group.members.map(x=>x.name):(storedNames.length>1?storedNames:(group.members.length>1?group.members.map(x=>x.name):[primary.student||data.students.find(x=>String(x.id)===String(primary.fixedStudentId))?.name||'']));
   const baseSummary=names.join(' + ')||seriesEvent?.summary||primary.student||'Clase';
   const statuses=items.map(x=>x.status||'normal');
   const status=statuses.includes('rain')?'rain':statuses.includes('cancel')?'cancel':'normal';
@@ -2225,6 +2249,16 @@ function applyStudentClassStatus(occurrenceId,status,studentId){
   data.fixedOverrides.push({...previousOverride,id:occurrenceId,fixedOccurrenceId:occurrenceId,fixedStudentId:String(x.id),student:x.name,date,time,duration,status,note:status==='rain'?'Suspendida por lluvia':status==='cancel'?'Cancelada por el alumno':'',googleEventId:previousOverride?.googleEventId||null});
  }
 }
+function currentStudentClassState(occurrenceId,studentId){
+ if(String(occurrenceId).startsWith('fixed-')){
+  const rain=(data.rain||[]).some(r=>String(r.fixedOccurrenceId||'')===String(occurrenceId)&&String(r.fixedStudentId||'')===String(studentId));
+  if(rain)return 'rain';
+  const cancelled=(data.cancellations||[]).some(r=>String(r.fixedOccurrenceId||'')===String(occurrenceId)&&String(r.fixedStudentId||'')===String(studentId));
+  return cancelled?'cancel':'normal';
+ }
+ const c=data.classes.find(a=>String(a.id)===String(occurrenceId));
+ return c?.status==='Lluvia'?'rain':c?.status==='Cancelada'?'cancel':'normal';
+}
 async function setStudentClassStatus(occurrenceId,status,studentId){
  const fixed=String(occurrenceId).startsWith('fixed-'),x=data.students.find(a=>String(a.id)===String(studentId));
  if(!x)return;
@@ -2232,16 +2266,18 @@ async function setStudentClassStatus(occurrenceId,status,studentId){
  if(fixed&&x.tariff==='group'){
   const parts=String(occurrenceId).split('-'),date=parts.slice(-3).join('-'),idx=Number(parts[parts.length-4]),schedule=studentSchedules(x)[idx];
   if(schedule){
-   const day=(new Date(date+'T12:00:00').getDay()+6)%7,signature=studentGroupSignature(x);
+   const day=(new Date(date+'T12:00:00').getDay()+6)%7,month=String(date).slice(0,7),signature=studentGroupSignature(x,month);
    if(signature){
-    for(const member of data.students.filter(st=>st.id!==x.id&&studentGroupSignature(st)===signature)){
+    for(const member of data.students.filter(st=>st.id!==x.id&&studentGroupSignature(st,month)===signature)){
      const memberIdx=fixedScheduleIndexFor(member,date,schedule.time,schedule.duration);
      if(memberIdx>=0)targets.push({id:String(member.id),occurrenceId:`fixed-${member.id}-${memberIdx}-${date}`});
     }
    }
   }
  }
- for(const target of targets)applyStudentClassStatus(target.occurrenceId,status,target.id);
+ const changedTargets=targets.filter(target=>currentStudentClassState(target.occurrenceId,target.id)!==status);
+ if(!changedTargets.length)return;
+ for(const target of changedTargets)applyStudentClassStatus(target.occurrenceId,status,target.id);
  await save();
  if(window.currentStudentGroupIds?.length)renderStudentGroupDetail();else renderStudentDetail();
  renderHomeStudents();renderHome();renderClassesList();
