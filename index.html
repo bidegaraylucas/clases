@@ -394,7 +394,7 @@ const GOOGLE_SCOPE='https://www.googleapis.com/auth/calendar';
 const GOOGLE_REDIRECT_URI='https://bidegaraylucas.github.io/clases/';
 const GOOGLE_TOKEN_FUNCTION=SUPABASE_URL+'/functions/v1/google-calendar-token';
 let googleToken=null; let googleCalendarId=null; let googleConnectionError=false; let googleSyncTimer=null; let googleSyncInFlight=null; let googleSyncPending=false;
-const KEY='tennisCoachV04';const monthKey=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};const seed={students:[],classes:[],rain:[],cancellations:[],payments:[],rates:{class:12000,individual:90000,group:60000},plans:[],activities:[],fixedOverrides:[]};
+const KEY='tennisCoachV04';const monthKey=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};const seed={students:[],classes:[],rain:[],cancellations:[],payments:[],rates:{class:12000,individual:90000,group:60000},plans:[],activities:[],fixedOverrides:[],fixedScheduleHistory:[]};
 let data;
 try{
  const cached=JSON.parse(localStorage.getItem(KEY)||'null');
@@ -481,8 +481,7 @@ function recoveryNote(note,rainId,allocations){
  return value;
 }
 function pendingHours(x){const completed=(data.classes||[]).filter(c=>c.student===x.name&&isRecoveryCompleted(c)).reduce((sum,c)=>sum+Number(c.duration||0),0);return Math.max(0,Number(x.rainHours||0)-Number(x.recoveredHours||0)-completed);}
-function fixedOccurrences(y,m){let out=[];let last=new Date(y,m+1,0).getDate();data.students.forEach(st=>{if(isStudentPausedForMonth(st,`${y}-${String(m+1).padStart(2,'0')}`))return;let f=st.fixedSchedule||{};let schedules=Array.isArray(f)?f:(f.active&&f.time?[f]:[]);schedules.forEach((sch,si)=>{if(!sch||!sch.active||!sch.time)return;let days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];for(let d=1;d<=last;d++){let dt=new Date(y,m,d),dow=(dt.getDay()+6)%7;if(days.includes(dow)){let date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(st.startDate&&date<st.startDate)continue;let fixedId='fixed-'+st.id+'-'+si+'-'+date,suspended=(data.rain||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),cancelled=(data.cancellations||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),exists=data.classes.some(c=>c.date===date&&c.time===sch.time&&c.student===st.name);if(!exists&&!suspended&&!cancelled)out.push({id:fixedId,student:st.name,date,time:sch.time,duration:Number(sch.duration||1),status:'Fija',note:'Horario fijo'});}}});});return out;}
-function fixedOccurrencesRange(studentName,days=60,pastDays=31){let out=[];let start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-pastDays);for(let i=0;i<days+pastDays;i++){let dt=new Date(start);dt.setDate(start.getDate()+i);let y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate();for(const c of fixedOccurrences(y,m)){if(c.student===studentName&&c.date===`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`)out.push(c)}}return out;}let viewDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);function isUuid(v){return typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)}
+function fixedOccurrences(y,m){let out=[];let last=new Date(y,m+1,0).getDate();data.students.forEach(st=>{if(isStudentPausedForMonth(st,`${y}-${String(m+1).padStart(2,'0')}`))return;for(const v of fixedScheduleVersions(st)){const sch=v.schedule;if(!sch?.active||!sch.time)continue;let days=sch.days||[];for(let d=1;d<=last;d++){let dt=new Date(y,m,d),dow=(dt.getDay()+6)%7,date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!days.map(Number).includes(dow)||date<v.from||(v.to&&date>=v.to)||(st.startDate&&date<st.startDate))continue;let fixedId='fixed-'+st.id+'-'+v.index+'-'+date,override=(data.fixedOverrides||[]).find(x=>String(x.fixedOccurrenceId||'')===fixedId),suspended=(data.rain||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),cancelled=(data.cancellations||[]).some(r=>String(r.fixedOccurrenceId||'')===fixedId),exists=data.classes.some(c=>c.date===date&&c.time===sch.time&&c.student===st.name);if(!exists&&!suspended&&!cancelled&&override?.status!=='moved')out.push({id:fixedId,student:st.name,date,time:sch.time,duration:Number(sch.duration||1),status:'Fija',note:'Horario fijo'});}}});return out;}function fixedOccurrencesRange(studentName,days=60,pastDays=31){let out=[];let start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-pastDays);for(let i=0;i<days+pastDays;i++){let dt=new Date(start);dt.setDate(start.getDate()+i);let y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate();for(const c of fixedOccurrences(y,m)){if(c.student===studentName&&c.date===`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`)out.push(c)}}return out;}let viewDate=new Date(new Date().getFullYear(),new Date().getMonth(),1);function isUuid(v){return typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v)}
 function newUuid(){return crypto.randomUUID()}
 async function syncToSupabase(){
   if(!currentSession) return {ok:false};
@@ -568,6 +567,7 @@ async function syncToSupabase(){
     await setConfig('estados_clases_fijas',JSON.stringify(data.fixedOverrides||[]));
     await setConfig('estado_pagos_mensuales',JSON.stringify(data.monthlyBilling||{month:monthKey(),arrears:[]}));
     await setConfig('pausas_mensuales_alumnos',JSON.stringify(data.monthlyPauses||[]));
+    await setConfig('horarios_fijos_historial',JSON.stringify(data.fixedScheduleHistory||[]));
     localStorage.setItem(KEY,JSON.stringify(data));
     return {ok:true};
   }catch(err){console.error('Supabase sync error:',err);return {ok:false,error:err};}
@@ -881,42 +881,42 @@ function renderHomeStudents(){
  host.innerHTML=students.length?students.map(st=>{
   const name=escapePlanText(st.name),schedule=escapePlanText(studentScheduleText(st)),classes=occurrences.filter(c=>String(c.studentId)===String(st.id)||String(c.student)===String(st.name));
 
-  const classRows=classes.length?classes.map(c=>{const d=new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}),state=c.status==='Lluvia'?'rain':c.status==='Cancelada'?'cancel':'normal',recoveryState=c.status==='Cancelada'?'cancel':isRecoveryCompleted(c)?'done':'pending',control=isRecoveryClass(c)?'<select class="home-class-state recovery-class-state" aria-label="Estado de recuperación '+escapePlanText(d)+'" onchange="setRecoveryClassStatus(\''+escapePlanText(c.id)+'\',this.value)"><option value="pending" '+(recoveryState==='pending'?'selected':'')+'>↻ Recuperación</option><option value="done" '+(recoveryState==='done'?'selected':'')+'>✓ Recuperada</option><option value="cancel" '+(recoveryState==='cancel'?'selected':'')+'>✕ Cancelada · no se recupera</option></select>':'<select class="home-class-state" aria-label="Estado de clase '+escapePlanText(d)+'" onchange="setStudentClassStatus(\''+escapePlanText(c.id)+'\',this.value,\''+escapePlanText(st.id)+'\')"><option value="normal" '+(state==='normal'?'selected':'')+'>Normal · se dio</option><option value="rain" '+(state==='rain'?'selected':'')+'>☂️ Lluvia · recuperar</option><option value="cancel" '+(state==='cancel'?'selected':'')+'>❌ Cancelada · no recuperar</option></select>';return '<div class="home-detail-row home-class-row"><span>'+escapePlanText(d)+' · '+escapePlanText(c.time||'')+'</span>'+control+'<span>'+Number(c.duration||1)+' h</span></div>'}).join(''):'<div class="muted">No hay clases registradas para este mes.</div>';
+  const classRows=classes.length?classes.map(c=>{const d=new Date(c.date+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}),state=c.status==='Lluvia'?'rain':c.status==='Cancelada'?'cancel':'normal',recoveryState=c.status==='Cancelada'?'cancel':isRecoveryCompleted(c)?'done':'pending',control=isRecoveryClass(c)?'<select class="home-class-state recovery-class-state" aria-label="Estado de recuperación '+escapePlanText(d)+'" onchange="setRecoveryClassStatus(\''+escapePlanText(c.id)+'\',this.value)"><option value="pending" '+(recoveryState==='pending'?'selected':'')+'>↻ Recuperación</option><option value="done" '+(recoveryState==='done'?'selected':'')+'>✓ Recuperada</option><option value="cancel" '+(recoveryState==='cancel'?'selected':'')+'>✕ Cancelada · no se recupera</option></select>':'<select class="home-class-state" aria-label="Estado de clase '+escapePlanText(d)+'" onchange="setStudentClassStatus(\''+escapePlanText(c.id)+'\',this.value,\''+escapePlanText(st.id)+'\')"><option value="normal" '+(state==='normal'?'selected':'')+'>Normal · se dio</option><option value="rain" '+(state==='rain'?'selected':'')+'>☂️ Lluvia · recuperar</option><option value="cancel" '+(state==='cancel'?'selected':'')+'>❌ Cancelada · no recuperar</option></select>';return '<div class="home-detail-row home-class-row"><span>'+escapePlanText(d)+' · '+escapePlanText(c.time||'')+(c.status==='Lluvia'||c.status==='Cancelada'?'':' <button class="btn secondary small" onclick="openClassDateEditor(&quot;'+escapePlanText(c.id)+'&quot;,&quot;'+escapePlanText(st.id)+'&quot;,&quot;'+escapePlanText(c.date)+'&quot;,&quot;'+escapePlanText(c.time||'')+'&quot;,&quot;'+Number(c.duration||1)+'&quot;)">Cambiar fecha</button>')+'</span>'+control+'<span>'+Number(c.duration||1)+' h</span></div>'}).join(''):'<div class="muted">No hay clases registradas para este mes.</div>';
   const dataText=[st.age?escapePlanText(st.age)+' años':'',escapePlanText(st.level||'Nivel no cargado'),escapePlanText(st.tariff==='group'?'Tarifa grupal':st.tariff==='class'?'Por clase':'Individual')].filter(Boolean).join(' · '),pauseMonth=new Date(Number(monthKey().slice(0,4)),Number(monthKey().slice(5,7))-1,1).toLocaleDateString('es-AR',{month:'long',year:'numeric'});
   return '<details class="card home-student" data-student-id="'+escapePlanText(st.id)+'" '+(openStudents.has(String(st.id))?'open':'')+'><summary class="home-student-summary"><span class="row"><span class="avatar">'+initials(st.name)+'</span><span class="home-student-title"><b>'+name+'</b><span class="muted">'+schedule+'</span></span></span><span class="row"><span class="badge '+(st.paid?'':'red')+'">'+(st.paid?'Pagado':'Pendiente')+'</span><span class="chevron">⌄</span></span></summary><div class="home-student-body"><div class="home-detail-section home-student-overview"><div class="row between"><b>Datos y pagos</b><div class="actions home-student-actions" style="margin:0"><button class="btn secondary small" onclick="editStudent(&quot;'+escapePlanText(st.id)+'&quot;)">Editar alumno</button><button class="btn secondary small student-delete" onclick="deleteStudent(&quot;'+escapePlanText(st.id)+'&quot;)">Eliminar</button></div></div><div class="muted">'+(dataText||'Sin datos adicionales')+'</div>'+(st.notes?'<div class="muted">'+escapePlanText(st.notes)+'</div>':'')+'<div class="home-detail-row"><span>Pago del mes actual</span><span class="home-payment-state">'+money(st.price||0)+' · '+(st.paid?'Pagado':'Pendiente')+' <button class="btn small '+(st.paid?'secondary':'')+'" onclick="togglePaid(\''+escapePlanText(st.id)+'\');renderHome()">'+(st.paid?'Marcar pendiente':'Me pagaron')+'</button></span></div><div class="home-detail-row home-pause-row"><b>'+(isStudentPausedForMonth(st)?'Pausa activa · ':'Pausa de clases · ')+pauseMonth+'</b><span><button class="btn secondary small" onclick="toggleStudentMonthPause(&quot;'+escapePlanText(st.id)+'&quot;)">'+(isStudentPausedForMonth(st)?'Reactivar este mes':'Este mes no entrena')+'</button></span></div><div class="muted">'+(isStudentPausedForMonth(st)?'Sus clases fijas quedan pausadas este mes.':'Esto afecta solo las clases fijas del mes actual.')+'</div></div><div class="home-detail-section"><div class="row between"><b>Clases del mes</b><button class="btn secondary small" onclick="openModal(\'class\',\''+escapePlanText(st.id)+'\')">+ Clase</button></div>'+classRows+'</div></div></details>';
  }).join(''):'<div class="card empty">'+(query?'No encontré alumnos.':'Todavía no hay alumnos. Usá “+ Alumno” para cargar el primero.')+'</div>';
  if(disclosure)disclosure.open=wasOpen;
 }
+function fixedScheduleVersions(st){
+ const id=String(st.id),history=(data.fixedScheduleHistory||[]).filter(h=>String(h.studentId)===id);
+ const current=studentSchedules(st),out=[];
+ history.forEach((h,index)=>{if(!h.fromDate||!h.toDate)return;out.push({schedule:{active:true,days:h.days||[],time:h.time,duration:Number(h.duration||1)},index:Number(h.scheduleIndex??index),from:h.fromDate,to:h.toDate})});
+ current.forEach((schedule,index)=>out.push({schedule,index,from:st.fixedScheduleStartDate||st.startDate||'0001-01-01',to:''}));
+ return out;
+}
+function fixedOccurrenceDetails(st,date,time,duration){
+ const day=(new Date(date+'T12:00:00').getDay()+6)%7;
+ return fixedScheduleVersions(st).find(v=>date>=v.from&&(!v.to||date<v.to)&&String(v.schedule.time||'').slice(0,5)===String(time||'').slice(0,5)&&Number(v.schedule.duration||1)===Number(duration||1)&&(v.schedule.days||[]).map(Number).includes(day))||null;
+}
 function classListOccurrences(pastDays=7,futureDays=45,month=null){
-  const out=[];
-  const start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-pastDays);
-  const end=new Date();end.setHours(0,0,0,0);end.setDate(end.getDate()+futureDays);
-  if(month&&/^\d{4}-\d{2}$/.test(month)){const [year,monthNumber]=month.split('-').map(Number);start.setFullYear(year,monthNumber-1,1);start.setHours(0,0,0,0);end.setFullYear(year,monthNumber,0);end.setHours(23,59,59,999);}
-  const explicitKeys=new Set(data.classes.map(c=>`${c.student}|${c.date}|${String(c.time||'').slice(0,5)}`));
-  for(let dt=new Date(start);dt<=end;dt.setDate(dt.getDate()+1)){
-    const y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate();
-    const date=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    for(const st of data.students){
-      if(isStudentPausedForMonth(st,`${y}-${String(m+1).padStart(2,'0')}`))continue;
-      const f=st.fixedSchedule||{};const schedules=Array.isArray(f)?f:(f.active&&f.time?[f]:[]);
-      schedules.forEach((sch,si)=>{
-        if(!sch||!sch.active||!sch.time)return;
-        const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
-        const dow=(dt.getDay()+6)%7;if(!days.includes(dow))return;if(st.startDate&&date<st.startDate)return;
-        const key=`${st.name}|${date}|${String(sch.time).slice(0,5)}`;if(explicitKeys.has(key))return;
-        const fixedId=`fixed-${st.id}-${si}-${date}`;
-        const override=(data.fixedOverrides||[]).find(r=>String(r.fixedOccurrenceId||'')===fixedId),rain=(data.rain||[]).find(r=>String(r.fixedOccurrenceId||'')===fixedId)||(override?.status==='rain'?override:null);
-        const cancel=(data.cancellations||[]).find(r=>String(r.fixedOccurrenceId||'')===fixedId)||(override?.status==='cancel'?override:null);
-        out.push({id:fixedId,student:st.name,studentId:st.id,date,time:sch.time,duration:Number(sch.duration||1),status:rain?'Lluvia':cancel?'Cancelada':'Fija',note:rain?.note||cancel?.note||'Horario fijo',rainHours:Number(rain?.hours||0),fixed:true});
-      });
-    }
+ const out=[];const start=new Date();start.setHours(0,0,0,0);start.setDate(start.getDate()-pastDays);const end=new Date();end.setHours(0,0,0,0);end.setDate(end.getDate()+futureDays);
+ if(month&&/^\d{4}-\d{2}$/.test(month)){const [year,monthNumber]=month.split('-').map(Number);start.setFullYear(year,monthNumber-1,1);start.setHours(0,0,0,0);end.setFullYear(year,monthNumber,0);end.setHours(23,59,59,999);}
+ const explicitKeys=new Set();for(const c of data.classes){const names=String(c.note||'').match(/^\[Grupo:([^\]]+)\]/)?.[1]?.split(' + ').map(x=>x.trim())||[c.student];for(const name of names)explicitKeys.add(`${name}|${c.date}|${String(c.time||'').slice(0,5)}`);}
+ for(let dt=new Date(start);dt<=end;dt.setDate(dt.getDate()+1)){
+  const y=dt.getFullYear(),m=dt.getMonth(),date=`${y}-${String(m+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`,dow=(dt.getDay()+6)%7;
+  for(const st of data.students){
+   if(isStudentPausedForMonth(st,`${y}-${String(m+1).padStart(2,'0')}`))continue;
+   for(const v of fixedScheduleVersions(st)){
+    const sch=v.schedule;if(!sch?.active||!sch.time||date<v.from||(v.to&&date>=v.to)||(st.startDate&&date<st.startDate)||(sch.days||[]).map(Number).indexOf(dow)<0)continue;
+    const key=`${st.name}|${date}|${String(sch.time).slice(0,5)}`;if(explicitKeys.has(key))continue;
+    const fixedId=`fixed-${st.id}-${v.index}-${date}`,override=(data.fixedOverrides||[]).find(r=>String(r.fixedOccurrenceId||'')===fixedId);if(override?.status==='moved')continue;
+    const rain=(data.rain||[]).find(r=>String(r.fixedOccurrenceId||'')===fixedId)||(override?.status==='rain'?override:null),cancel=(data.cancellations||[]).find(r=>String(r.fixedOccurrenceId||'')===fixedId)||(override?.status==='cancel'?override:null);
+    out.push({id:fixedId,student:st.name,studentId:st.id,date,time:sch.time,duration:Number(sch.duration||1),status:rain?'Lluvia':cancel?'Cancelada':'Fija',note:rain?.note||cancel?.note||'Horario fijo',rainHours:Number(rain?.hours||0),fixed:true});
+   }
   }
-  for(const c of data.classes){
-    if(!c.date||c.date<`${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`||c.date>`${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`)continue;
-    const st=data.students.find(x=>x.name===c.student);
-    out.push({...c,studentId:st?.id||null,fixed:false});
-  }
-  return out.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+ }
+ for(const c of data.classes){if(!c.date||c.date<`${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`||c.date>`${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`)continue;const groupNames=String(c.note||'').match(/^\[Grupo:([^\]]+)\]/)?.[1]?.split(' + ').map(x=>x.trim()).filter(Boolean)||[c.student];for(const memberName of groupNames){const st=data.students.find(x=>x.name===memberName);out.push({...c,student:memberName,studentId:st?.id||null,fixed:false});}}
+ return out.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
 }
 function classStatusLabel(c){
  if(isRecoveryClass(c)&&c.status==='Cancelada')return 'Recuperación cancelada · no se recupera';
@@ -1671,8 +1671,9 @@ async function syncFixedSuspensionsToGoogle(){
   if(!item.fixedOccurrenceId||!item.fixedStudentId||!item.date)continue;
   const student=data.students.find(x=>String(x.id)===String(item.fixedStudentId));
   const dt=new Date(item.date+'T12:00:00'),day=(dt.getDay()+6)%7;
-  const seriesId=map[item.fixedStudentId+'|'+day]||map[item.fixedStudentId]||'';
   const time=String(item.time||item.fixedTime||'').slice(0,5),duration=Number(item.duration||item.hours||1);
+  const sourceStudent=data.students.find(x=>String(x.id)===String(item.fixedStudentId)),version=sourceStudent?fixedScheduleVersions(sourceStudent).find(v=>item.date>=v.from&&(!v.to||item.date<v.to)&&String(v.schedule.time||'').slice(0,5)===time&&Number(v.schedule.duration||1)===duration):null;
+  const seriesId=map[item.fixedStudentId+'|'+day+'|'+(version?.from||'')]||map[item.fixedStudentId+'|'+day]||map[item.fixedStudentId]||'';
   const recoveryMemberIds=Array.isArray(item.recoveryMemberIds)?item.recoveryMemberIds.map(String):null;
   const sameSlotMembers=item.source==='scheduled-recovery'&&recoveryMemberIds?recoveryMemberIds.map(id=>data.students.find(st=>String(st.id)===id)).filter(Boolean):student?.tariff==='group'?data.students.filter(st=>st.tariff==='group'&&!isStudentPausedForMonth(st,String(item.date).slice(0,7))&&studentSchedules(st).some(sch=>{
    const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
@@ -1700,8 +1701,8 @@ async function syncFixedSuspensionsToGoogle(){
   const names=recoveryOverride?group.members.map(x=>x.name):(pausedGroupMember?group.members.map(x=>x.name):(storedNames.length>1?storedNames:(group.members.length>1?group.members.map(x=>x.name):[primary.student||data.students.find(x=>String(x.id)===String(primary.fixedStudentId))?.name||''])));
   const baseSummary=names.join(' + ')||seriesEvent?.summary||primary.student||'Clase';
   const statuses=items.map(x=>x.status||'normal');
-  const status=statuses.includes('rain')?'rain':statuses.includes('cancel')?'cancel':statuses.includes('recovery')?'recovery':'normal';
-  for(const item of items)item.status=status;
+  const status=statuses.includes('rain')?'rain':statuses.includes('cancel')?'cancel':statuses.includes('moved')?'cancel':statuses.includes('recovery')?'recovery':'normal';
+  for(const item of items)if(item.status!=='moved')item.status=status;
   const summary=status==='recovery'?'🔁 '+baseSummary:googleStatusTitle(baseSummary,names[0],status);
   const originalRange=googleDateTime(group.date,group.time,group.duration),compactRange=googleDateTime(group.date,group.time,0.25);
   const description=status==='rain'?'Suspendida por lluvia · se recupera · Horario original: '+group.time+'–'+originalRange.end.slice(11,16)+' ('+group.duration+' h)':status==='cancel'?'Cancelada por el alumno · no se recupera · Horario original: '+group.time+'–'+originalRange.end.slice(11,16)+' ('+group.duration+' h)':status==='recovery'?'Horario fijo ocupado por una recuperación programada':'Horario fijo de Mis Clases';
@@ -1771,30 +1772,24 @@ async function syncFixedSchedulesToGoogle(){
     pageToken=page.nextPageToken||'';
   }while(pageToken);
 
-  // Normalizamos todos los horarios semanales de cada alumno.
-  // Cada combinación día + hora + duración genera una serie semanal independiente.
+  // Se crean series separadas por período para que un cambio de horario no reescriba las fechas anteriores.
   const groups=new Map();
-  for(const st of data.students){
-    if(isStudentPausedForMonth(st))continue;
-    const raw=st.fixedSchedule;
-    const schedules=Array.isArray(raw)?raw:(raw?.active?[raw]:[]);
-    for(const sch of schedules){
-      if(!sch?.active||!sch.time)continue;
-      const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
-      for(const selectedDay of days.filter(d=>Number.isInteger(d)&&d>=0&&d<=6)){
-        const time=String(sch.time).slice(0,5);
-        const duration=Number(sch.duration||1);
-        const isGroup=st.tariff==='group';
-        const groupKey=isGroup
-          ? `group|${selectedDay}|${time}|${duration}`
-          : `student|${st.id}|${selectedDay}|${time}|${duration}|${st.startDate||''}`;
-        if(!groups.has(groupKey))groups.set(groupKey,{day:selectedDay,time,duration,startDate:st.startDate||'',members:[]});
-        const group=groups.get(groupKey);
-        if(isGroup&&st.startDate&&(!group.startDate||st.startDate<group.startDate))group.startDate=st.startDate;
-        const groupMembers=group.members;
-        if(!groupMembers.some(x=>String(x.id)===String(st.id)))groupMembers.push(st);
-      }
+  const addScheduleGroup=(st,sch,fromDate,toDate='')=>{
+    if(!sch?.active||!sch.time)return;
+    const days=Array.isArray(sch.days)?sch.days.map(Number):[Number(sch.day)];
+    for(const selectedDay of days.filter(d=>Number.isInteger(d)&&d>=0&&d<=6)){
+      const time=String(sch.time).slice(0,5),duration=Number(sch.duration||1),groupPeriod=`${fromDate||''}|${toDate||''}`;
+      const groupKey=st.tariff==='group'?`group|${selectedDay}|${time}|${duration}|${groupPeriod}`:`student|${st.id}|${selectedDay}|${time}|${duration}|${groupPeriod}`;
+      if(!groups.has(groupKey))groups.set(groupKey,{day:selectedDay,time,duration,startDate:fromDate||st.startDate||'',endDate:toDate||'',members:[]});
+      const group=groups.get(groupKey);if(!group.members.some(x=>String(x.id)===String(st.id)))group.members.push(st);
     }
+  };
+  for(const st of data.students){
+    for(const h of (data.fixedScheduleHistory||[]).filter(x=>String(x.studentId)===String(st.id))){
+      addScheduleGroup(st,{active:true,days:h.days,time:h.time,duration:h.duration},h.fromDate,h.toDate);
+    }
+    if(isStudentPausedForMonth(st))continue;
+    for(const sch of studentSchedules(st))addScheduleGroup(st,sch,st.fixedScheduleStartDate||st.startDate||'');
   }
 
   const newMap={};
@@ -1817,7 +1812,7 @@ async function syncFixedSchedulesToGoogle(){
     if(Number.isNaN(start.getTime())) continue;
     const today=start.getDay();
     let daysUntil=(dow-today+7)%7;
-    if(daysUntil===0 && start.getTime()<=Date.now())daysUntil=7;
+    if(!g.endDate&&daysUntil===0 && start.getTime()<=Date.now())daysUntil=7;
     start.setDate(start.getDate()+daysUntil);
     const date=start.toISOString().slice(0,10);
     const endDate=new Date(start.getTime()+g.duration*3600000);
@@ -1830,7 +1825,7 @@ async function syncFixedSchedulesToGoogle(){
       description:'Horario fijo de Mis Clases',
       start:{dateTime:`${date}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00`,timeZone:tz},
       end:{dateTime:`${date}T${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}:00`,timeZone:tz},
-      recurrence:[`RRULE:FREQ=WEEKLY;BYDAY=${['SU','MO','TU','WE','TH','FR','SA'][dow]}`],
+      recurrence:[`RRULE:FREQ=WEEKLY;BYDAY=${['SU','MO','TU','WE','TH','FR','SA'][dow]}${g.endDate?';UNTIL='+(()=>{const d=new Date(g.endDate+'T12:00:00');d.setDate(d.getDate()-1);return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'T235959Z'})():''}`],
       extendedProperties:{private:{mis_clases:'1',student:names.join(' + '),kind:'fixed',grouped:members.length>1?'1':'0',weekday:String(selectedDay),time:g.time}}
     };
 
@@ -1848,7 +1843,7 @@ async function syncFixedSchedulesToGoogle(){
       }
     }
 
-    const existingSeries=eventId?existingFixed.get(eventId):null;if(existingSeries?.start?.dateTime){event.start=existingSeries.start;event.end=existingSeries.end||event.end;event.recurrence=existingSeries.recurrence||event.recurrence;}const existingPrivate=existingSeries?.extendedProperties?.private||{},wantedPrivate=event.extendedProperties.private;const sameSeries=!!existingSeries&&existingSeries.summary===event.summary&&existingSeries.description===event.description&&existingSeries.start?.dateTime===event.start?.dateTime&&existingSeries.end?.dateTime===event.end?.dateTime&&JSON.stringify(existingSeries.recurrence||[])===JSON.stringify(event.recurrence||[])&&Object.entries(wantedPrivate).every(([k,v])=>String(existingPrivate[k]||'')===String(v||'')); if(eventId&&!sameSeries){
+    const existingSeries=eventId?existingFixed.get(eventId):null;if(existingSeries?.start?.dateTime&&!g.endDate){event.start=existingSeries.start;event.end=existingSeries.end||event.end;event.recurrence=existingSeries.recurrence||event.recurrence;}const existingPrivate=existingSeries?.extendedProperties?.private||{},wantedPrivate=event.extendedProperties.private;const sameSeries=!!existingSeries&&existingSeries.summary===event.summary&&existingSeries.description===event.description&&existingSeries.start?.dateTime===event.start?.dateTime&&existingSeries.end?.dateTime===event.end?.dateTime&&JSON.stringify(existingSeries.recurrence||[])===JSON.stringify(event.recurrence||[])&&Object.entries(wantedPrivate).every(([k,v])=>String(existingPrivate[k]||'')===String(v||'')); if(eventId&&!sameSeries){
       try{
         await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(eventId)}`,{method:'PUT',body:JSON.stringify(event)});
       }catch(e){
@@ -1866,6 +1861,7 @@ async function syncFixedSchedulesToGoogle(){
     // Guardamos el mismo ID por alumno/día para que lluvia pueda borrar una sola ocurrencia.
     for(const st of members){
       newMap[`${st.id}|${selectedDay}`]=eventId;
+      newMap[`${st.id}|${selectedDay}|${g.startDate||''}`]=eventId;
     }
     newMap[groupKey]=eventId;
   }
@@ -1972,7 +1968,7 @@ function buildCalendarChangeSet(before,after){
   const prevClasses=new Map((before.classes||[]).map(x=>[String(x.id),x]));
   const changedClasses=(after.classes||[]).filter(x=>JSON.stringify(prevClasses.get(String(x.id)))!==JSON.stringify(x)).map(x=>String(x.id));
   const names=x=>(x.students||[]).map(st=>String(st.name||'').trim()).filter(Boolean).sort();
-  const studentCalendar=x=>(x.students||[]).map(st=>({id:String(st.id),name:st.name||'',tariff:st.tariff||'',startDate:st.startDate||'',fixedSchedule:st.fixedSchedule||null})).sort((a,b)=>a.id.localeCompare(b.id));
+  const studentCalendar=x=>({students:(x.students||[]).map(st=>({id:String(st.id),name:st.name||'',tariff:st.tariff||'',startDate:st.startDate||'',fixedScheduleStartDate:st.fixedScheduleStartDate||'',fixedSchedule:st.fixedSchedule||null})).sort((a,b)=>a.id.localeCompare(b.id)),history:x.fixedScheduleHistory||[]});
   const fixedRecords=x=>[...(x.rain||[]),...(x.cancellations||[])].filter(r=>r.fixedOccurrenceId).map(r=>({id:r.id,fixedOccurrenceId:r.fixedOccurrenceId,fixedStudentId:r.fixedStudentId,date:r.date,time:r.time||r.fixedTime,hours:r.hours,status:r.status,recoveryId:r.recoveryId,note:r.note})).sort((a,b)=>String(a.fixedOccurrenceId).localeCompare(String(b.fixedOccurrenceId)));
   const recoverySchedule=x=>(x.classes||[]).filter(c=>c.plannedRecovery).map(c=>({id:String(c.id),student:c.student,date:c.date,time:c.time,duration:c.duration,classType:c.classType,note:c.note,status:c.status})).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
   return {
@@ -2063,7 +2059,13 @@ function vals(f){return Object.fromEntries(new FormData(f).entries())}async func
   const x=data.students.find(a=>String(a.id)===String(id));
   if(!x){alert('No se encontró el alumno para editar.');return}
   const oldName=x.name,oldGroupLabel=studentGroupMembers(x).length>1?studentGroupLabel(studentGroupMembers(x)):'';
-  Object.assign(x,{name,age:Number(v.age),level:v.level,tariff:v.tariff,price,notes:v.notes,startDate,fixedSchedule:fixed});
+  const oldSchedules=studentSchedules(x).filter(q=>q?.active&&q.time),nextShape=fixed.map(q=>({days:[...q.days].sort((a,b)=>a-b),time:q.time,duration:Number(q.duration||1)})),oldShape=oldSchedules.map(q=>({days:[...q.days].sort((a,b)=>a-b),time:q.time,duration:Number(q.duration||1)})),scheduleChanged=JSON.stringify(oldShape)!==JSON.stringify(nextShape),effectiveToday=localDateKey();
+  if(scheduleChanged){
+   for(const [index,q] of oldSchedules.entries()){
+    const from=x.fixedScheduleStartDate||x.startDate||effectiveToday;if(from<effectiveToday)data.fixedScheduleHistory.push({studentId:String(x.id),fromDate:from,toDate:effectiveToday,days:q.days,time:q.time,duration:Number(q.duration||1),scheduleIndex:index});
+   }
+  }
+  Object.assign(x,{name,age:Number(v.age),level:v.level,tariff:v.tariff,price,notes:v.notes,startDate,fixedSchedule:fixed,fixedScheduleStartDate:scheduleChanged?effectiveToday:(x.fixedScheduleStartDate||x.startDate||effectiveToday)});
   if(oldName!==name){
    data.classes.forEach(r=>{if(r.student===oldName)r.student=name});
    for(const rows of [data.rain,data.cancellations,data.fixedOverrides])for(const r of rows||[])if(r.student===oldName||String(r.studentId||r.fixedStudentId||'')===String(x.id))r.student=name;
@@ -2072,7 +2074,7 @@ function vals(f){return Object.fromEntries(new FormData(f).entries())}async func
    const newGroupLabel=studentGroupMembers(x).length>1?studentGroupLabel(studentGroupMembers(x)):'';
    (data.plans||[]).forEach(p=>{if(p.student===oldName)p.student=name;else if(oldGroupLabel&&p.student===oldGroupLabel&&newGroupLabel)p.student=newGroupLabel});
   }
- }else data.students.push({id:newUuid(),name,age:Number(v.age),level:v.level,tariff:v.tariff,price,paid:false,rainHours:0,recoveredHours:0,startDate,fixedSchedule:fixed,notes:v.notes});
+ }else data.students.push({id:newUuid(),name,age:Number(v.age),level:v.level,tariff:v.tariff,price,paid:false,rainHours:0,recoveredHours:0,startDate,fixedSchedule:fixed,fixedScheduleStartDate:startDate||localDateKey(),notes:v.notes});
  renderAll();
  const result=await save();
  if(!result)return;
@@ -2313,6 +2315,26 @@ async function setRecoveryClassStatus(id,value){
  if(saved===false){c.status=previous;localStorage.setItem(KEY,JSON.stringify(data));renderAll();return}
  renderHomeStudents();renderClassesList();renderHome();
 }
+async function openClassDateEditor(occurrenceId,studentId,date,time,duration){
+ const modal=document.getElementById('modal'),sheet=document.getElementById('sheet');if(!modal||!sheet)return;
+ sheet.innerHTML='<h2>Cambiar fecha de clase</h2><p class="muted">Se cambiará solo esta clase; el horario fijo y las demás fechas quedan igual.</p><form class="form" onsubmit="saveClassDate(event,&quot;'+escapePlanText(occurrenceId)+'&quot;,&quot;'+escapePlanText(studentId)+'&quot;,&quot;'+escapePlanText(date)+'&quot;,&quot;'+escapePlanText(time)+'&quot;,&quot;'+Number(duration||1)+'&quot;)"><label>Nueva fecha<input type="date" name="newDate" value="'+escapePlanText(date)+'" required></label><div class="actions"><button type="button" class="btn secondary" onclick="closeModal()">Cancelar</button><button class="btn" type="submit">Guardar fecha</button></div></form>';
+ modal.classList.add('show');
+}
+async function saveClassDate(e,occurrenceId,studentId,oldDate,time,duration){
+ e.preventDefault();const form=e.target,newDate=String(new FormData(form).get('newDate')||''),student=data.students.find(x=>String(x.id)===String(studentId));if(!student||!newDate)return;
+ if(newDate===oldDate){closeModal();return}
+ if(String(occurrenceId).startsWith('fixed-')){
+  const parts=String(occurrenceId).split('-'),index=Number(parts[parts.length-4]),version=fixedScheduleVersions(student).find(v=>v.index===index&&oldDate>=v.from&&(!v.to||oldDate<v.to));
+  if(!version){alert('No encontré el horario fijo correspondiente a esta clase.');return}
+  const members=student.tariff==='group'?data.students.filter(m=>m.tariff==='group'&&fixedOccurrenceDetails(m,oldDate,time,duration)):[student],group=members.length?members:[student];
+  for(const member of group){const memberVersion=fixedScheduleVersions(member).find(v=>oldDate>=v.from&&(!v.to||oldDate<v.to)&&String(v.schedule.time||'').slice(0,5)===String(time).slice(0,5)&&Number(v.schedule.duration||1)===Number(duration||1));if(!memberVersion)continue;const memberId='fixed-'+member.id+'-'+memberVersion.index+'-'+oldDate;data.fixedOverrides=(data.fixedOverrides||[]).filter(x=>String(x.fixedOccurrenceId)!==memberId);data.fixedOverrides.push({id:memberId,fixedOccurrenceId:memberId,fixedStudentId:String(member.id),student:member.name,date:oldDate,time:String(time).slice(0,5),duration:Number(duration||1),status:'moved',note:'Fecha cambiada desde Clases del mes'});}
+  const groupLabel=group.length>1?'[Grupo:'+group.map(m=>m.name).join(' + ')+'] ':'';
+  data.classes.push({id:newUuid(),student:student.name,date:newDate,time:String(time).slice(0,5),duration:Number(duration||1),status:group.length>1?'Clase grupal':'Clase suelta',classType:group.length>1?'group':'individual',grouped:group.length>1,note:groupLabel+'Clase reprogramada desde horario fijo'});
+ }else{
+  const c=data.classes.find(x=>String(x.id)===String(occurrenceId));if(!c){alert('No encontré esta clase para cambiar la fecha.');return}c.date=newDate;
+ }
+ closeModal();renderAll();const saved=await save();if(saved!==false)showSaveNotice('Fecha de esta clase actualizada.');
+}
 async function setStudentClassStatus(occurrenceId,status,studentId){
  const fixed=String(occurrenceId).startsWith('fixed-'),x=data.students.find(a=>String(a.id)===String(studentId));
  if(!x)return;
@@ -2381,7 +2403,7 @@ async function loadFromSupabase(){
       supabaseClient.from('pagos').select('*').order('fecha'),
       supabaseClient.from('planes').select('*').order('created_at'),
       supabaseClient.from('tarifas').select('*').eq('activa',true),
-      supabaseClient.from('configuracion').select('clave,valor').in('clave',['actividades_recurrentes','cancelaciones_alumno','suspensiones_lluvia','estados_clases_fijas','estado_pagos_mensuales','pausas_mensuales_alumnos'])
+      supabaseClient.from('configuracion').select('clave,valor').in('clave',['actividades_recurrentes','cancelaciones_alumno','suspensiones_lluvia','estados_clases_fijas','estado_pagos_mensuales','pausas_mensuales_alumnos','horarios_fijos_historial'])
     ]);
     for(const r of [aRes,hRes,cRes,pRes,plRes,tRes,cfgRes]) if(r.error) throw r.error;
 
@@ -2400,10 +2422,33 @@ async function loadFromSupabase(){
         tariff:st.tarifa_tipo||'individual',price:Number(st.precio||0)||data.rates.individual,
         paid:!!st.pagado,hits:st.golpes||{},rainHours:Number(st.lluvia_horas||0),
         recoveredHours:Number(st.recuperadas_horas||0),startDate:st.fecha_inicio||'',
-        fixedSchedule:Object.values(groups).map(g=>({...g,days:[...new Set(g.days)]}))
+        fixedSchedule:Object.values(groups).map(g=>({...g,days:[...new Set(g.days)]})),
+        fixedScheduleStartDate:(fs.map(h=>String(h.created_at||'').slice(0,10)).filter(Boolean).sort()[0]||st.fecha_inicio||'')
       };
     });
 
+    const historyConfig=(cfgRes.data||[]).find(x=>x.clave==='horarios_fijos_historial');
+    if(historyConfig?.valor){try{data.fixedScheduleHistory=JSON.parse(historyConfig.valor)||[]}catch{data.fixedScheduleHistory=[]}}
+    else{
+      data.fixedScheduleHistory=[];
+      for(const st of data.students){
+        const rows=(hRes.data||[]).filter(h=>h.alumno_id===st.id),activeFrom=rows.filter(h=>h.activo).map(h=>String(h.created_at||'').slice(0,10)).filter(Boolean).sort()[0]||st.fixedScheduleStartDate;
+        if(!activeFrom)continue;
+        const oldGroups=new Map();
+        for(const h of rows.filter(x=>!x.activo)){
+          const sig=`${Number(h.dia_semana)}|${String(h.hora||'').slice(0,5)}|${Number(h.duracion_minutos||60)}`,from=String(h.created_at||'').slice(0,10);
+          if(!from||from>=activeFrom)continue;
+          if(!oldGroups.has(sig))oldGroups.set(sig,{from,day:Number(h.dia_semana),time:String(h.hora||'').slice(0,5),duration:Number(h.duracion_minutos||60)/60});
+          else if(from<oldGroups.get(sig).from)oldGroups.get(sig).from=from;
+        }
+        const versions=[...oldGroups.values()].sort((a,b)=>a.from.localeCompare(b.from));
+        if(versions.length){const days=[...new Set(versions.map(v=>v.day))],times=[...new Set(versions.map(v=>v.time))],durs=[...new Set(versions.map(v=>v.duration))];
+          if(days.length===1&&times.length===1&&durs.length===1)data.fixedScheduleHistory.push({studentId:String(st.id),fromDate:versions[0].from,toDate:activeFrom,days,time:times[0],duration:durs[0],scheduleIndex:0});
+          else versions.forEach((v,index)=>data.fixedScheduleHistory.push({studentId:String(st.id),fromDate:v.from,toDate:versions[index+1]?.from||activeFrom,days:[v.day],time:v.time,duration:v.duration,scheduleIndex:index}));
+        }
+      }
+    }
+    data.students.forEach(st=>{if(!st.fixedScheduleStartDate)st.fixedScheduleStartDate=st.startDate||''});
     data.classes=(cRes.data||[]).map(c=>({
       id:c.id,student:nameById[c.alumno_id]||'',date:c.fecha,time:String(c.hora||'').slice(0,5),
       duration:Number(c.duracion_minutos||60)/60,
