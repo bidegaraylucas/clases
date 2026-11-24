@@ -1172,10 +1172,13 @@ async function deleteSeasonalClass(id){
 }
 async function syncSeasonalToGoogle(){
  if(!googleCalendarId)return;
+ const eventsById=new Map();let pageToken='';
+ do{const q='calendars/'+encodeURIComponent(googleCalendarId)+'/events?singleEvents=false&showDeleted=false&maxResults=250&privateExtendedProperty='+encodeURIComponent('kind=seasonal')+(pageToken?'&pageToken='+encodeURIComponent(pageToken):'');const page=await googleApi(q,{method:'GET'});for(const ev of page.items||[]){const id=String(ev.extendedProperties?.private?.seasonal_id||'');if(id&&!eventsById.has(id))eventsById.set(id,ev)}pageToken=page.nextPageToken||''}while(pageToken);
  for(const x of data.seasonalClasses||[]){
   if(!x.date||!x.time)continue;
   const dt=googleDateTime(x.date,x.time,Number(x.duration||1)),body={summary:'Colonia + pretemporada',description:(x.paid?'Pagado':'Pendiente')+' · '+money(Number(x.ratePerHour||0))+' por hora · '+Number(x.duration||1)+' h · Total '+money(Number(x.ratePerHour||0)*Number(x.duration||1)),start:{dateTime:dt.start,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},end:{dateTime:dt.end,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone},extendedProperties:{private:{mis_clases:'1',kind:'seasonal',seasonal_id:String(x.id)}}};
-  if(x.googleEventId){try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(x.googleEventId),{method:'PUT',body:JSON.stringify(body)});continue}catch(e){if(!isGoogleMissingResource(e))throw e;x.googleEventId=null}}
+  const existing=eventsById.get(String(x.id));let id=x.googleEventId||existing?.id||null;
+  if(id){try{await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events/'+encodeURIComponent(id),{method:'PUT',body:JSON.stringify(body)});x.googleEventId=id;continue}catch(e){if(!isGoogleMissingResource(e))throw e;x.googleEventId=null}}
   const ev=await googleApi('calendars/'+encodeURIComponent(googleCalendarId)+'/events',{method:'POST',body:JSON.stringify(body)});x.googleEventId=ev.id;
  }
 }
@@ -2074,6 +2077,7 @@ async function syncAllToGoogle(auto=false){
   await syncFixedSchedulesToGoogle();
   await syncFixedSuspensionsToGoogle();
   await syncActivitiesToGoogle();
+  await syncSeasonalToGoogle();
   updateGoogleStatus();
   return true
 }
@@ -2082,7 +2086,7 @@ async function initGoogleCalendar(){
     googleCalendarId=await getConfig('google_calendar_id');
     const connected=await refreshPersistentGoogleToken();
     if(connected){
-      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>['lluvia','suspendida','cancelada'].includes(String(c.status||'').toLowerCase())||(c.date>=localDateKey()&&isRecoveryClass(c)&&(!c.plannedRecovery||!isRecoveryCompleted(c)))))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle()}
+      try{await ensureGoogleCalendar();await flushGoogleEventDeletionQueue();for(const c of data.classes.filter(c=>['lluvia','suspendida','cancelada'].includes(String(c.status||'').toLowerCase())||(c.date>=localDateKey()&&isRecoveryClass(c)&&(!c.plannedRecovery||!isRecoveryCompleted(c)))))await syncClassToGoogle(c);await syncFixedSchedulesToGoogle();await syncFixedSuspensionsToGoogle();await syncActivitiesToGoogle();await syncSeasonalToGoogle()}
       catch(e){console.warn('Google Calendar duplicate reconciliation:',e.message)}
     }
     updateGoogleStatus();
@@ -2226,6 +2230,16 @@ async function syncActivitiesToGoogle(){
     }
     if(!id){const ev=await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events`,{method:'POST',body:JSON.stringify(body)});id=ev.id;}
     newMap[occKey]=id;wanted.add(id);
+  }
+  // También retirar eventos futuros que quedaron fuera de la ventana normal por acortar el ciclo.
+  for(const [occKey,events] of Object.entries(existingByKey)){
+    const split=occKey.lastIndexOf('|'),activityId=occKey.slice(0,split),date=occKey.slice(split+1),activity=(data.activities||[]).find(a=>String(a.id)===activityId);
+    if(!activity||!activity.endDate||date<=activity.endDate)continue;
+    for(const ev of events||[]){
+      if(wanted.has(ev.id))continue;
+      try{await googleApi(`calendars/${encodeURIComponent(googleCalendarId)}/events/${encodeURIComponent(ev.id)}`,{method:'DELETE'})}
+      catch(e){if(!isGoogleMissingResource(e))throw e}
+    }
   }
   // Only clean events belonging to dates in the managed window.
   // Older Escuelita events are historical and must never be deleted by a normal sync.
