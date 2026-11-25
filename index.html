@@ -2387,7 +2387,7 @@ async function saveClassDate(e,occurrenceId,studentId,oldDate,time,duration){
   const groupLabel=group.length>1?'[Grupo:'+group.map(m=>m.name).join(' + ')+'] ':'';
   data.classes.push({id:newUuid(),student:student.name,date:newDate,time:newTime,duration:Number(duration||1),status:group.length>1?'Clase grupal':'Clase suelta',classType:group.length>1?'group':'individual',grouped:group.length>1,note:groupLabel+'Clase reprogramada desde horario fijo'});
  }else{
-  const c=data.classes.find(x=>String(x.id)===String(occurrenceId));if(!c){alert('No encontré esta clase para cambiar la fecha.');return}c.date=newDate;
+  const c=data.classes.find(x=>String(x.id)===String(occurrenceId));if(!c){alert('No encontré esta clase para cambiar la fecha.');return}c.date=newDate;c.time=newTime;
  }
  closeModal();renderAll();const saved=await save();if(saved!==false)showSaveNotice('Fecha y horario de esta clase actualizados.');
 }
